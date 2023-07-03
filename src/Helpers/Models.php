@@ -19,22 +19,18 @@ class Models
          */
 
         return collect(array_keys(ClassMapGenerator::createMap($directory)))
-            ->filter(fn ($class) => is_subclass_of($class, Model::class))
-            ->flatten();
+            ->filter(fn($class) => is_subclass_of($class, Model::class));
     }
 
     /**
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function getCustomAttributesOf(string|Model $model): Collection
     {
-        if (is_string($model)) {
-            $model = new $model();
-        }
-
-        return collect((new \ReflectionClass($model))->getMethods())
+        return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
             ->filter(
-                fn (ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
+                fn(ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
             );
     }
 
@@ -43,25 +39,22 @@ class Models
         $methodName = str($reflectionMethod->getName());
 
         return (
-            $methodName->startsWith('get')
-            && $methodName->endsWith('Attribute')
-            && $methodName->value() !== 'getAttribute'
-        ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
+                $methodName->startsWith('get')
+                && $methodName->endsWith('Attribute')
+                && $methodName->value() !== 'getAttribute'
+            ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
     }
 
     /**
      * @param class-string<Model>|Model $model
      *
      * @throws \ReflectionException
+     * @throws \Exception
      */
     public static function getRelatedModelsOf(string|Model $model): Collection
     {
-        if (is_string($model)) {
-            $model = new $model();
-        }
-
-        return collect((new \ReflectionClass($model))->getMethods())
-            ->filter(fn (ReflectionMethod $method) => static::isRelation($method));
+        return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
+            ->filter(fn(ReflectionMethod $method) => static::isRelation($method));
     }
 
     private static function isRelation(ReflectionMethod $method): bool
@@ -73,12 +66,11 @@ class Models
 
     /**
      * @throws Exception
+     * @throws \Exception
      */
     public static function getFieldsOf(string|Model $model): Collection
     {
-        if (is_string($model)) {
-            $model = new $model();
-        }
+        $model = static::parseModel($model);
 
         /**
          * Model fields name should be exact like column name.
@@ -90,5 +82,19 @@ class Models
                 ->createSchemaManager()
                 ->listTableColumns($model->getTable())
         );
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public static function parseModel(string|Model $model): Model
+    {
+        if (is_string($model)) {
+            if (!is_subclass_of($model, Model::class)) {
+                throw new \Exception("$model is not a valid Model Class");
+            }
+            $model = new $model;
+        }
+        return $model;
     }
 }
