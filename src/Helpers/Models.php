@@ -19,7 +19,7 @@ class Models
          */
 
         return collect(array_keys(ClassMapGenerator::createMap($directory)))
-            ->filter(fn($class) => is_subclass_of($class, Model::class));
+            ->filter(fn ($class) => is_subclass_of($class, Model::class));
     }
 
     /**
@@ -30,7 +30,7 @@ class Models
     {
         return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
             ->filter(
-                fn(ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
+                fn (ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
             );
     }
 
@@ -39,10 +39,10 @@ class Models
         $methodName = str($reflectionMethod->getName());
 
         return (
-                $methodName->startsWith('get')
-                && $methodName->endsWith('Attribute')
-                && $methodName->value() !== 'getAttribute'
-            ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
+            $methodName->startsWith('get')
+            && $methodName->endsWith('Attribute')
+            && $methodName->value() !== 'getAttribute'
+        ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
     }
 
     /**
@@ -54,7 +54,7 @@ class Models
     public static function getRelatedModelsOf(string|Model $model): Collection
     {
         return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
-            ->filter(fn(ReflectionMethod $method) => static::isRelation($method));
+            ->filter(fn (ReflectionMethod $method) => static::isRelation($method));
     }
 
     private static function isRelation(ReflectionMethod $method): bool
@@ -93,8 +93,9 @@ class Models
             if (!is_subclass_of($model, Model::class)) {
                 throw new \Exception("$model is not a valid Model Class");
             }
-            $model = new $model;
+            $model = new $model();
         }
+
         return $model;
     }
 }
