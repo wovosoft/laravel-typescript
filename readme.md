@@ -121,7 +121,7 @@ MIT. Please see the [license file](license.md) for more information.
 
 [link-travis]: https://travis-ci.org/wovosoft/laravel-typescript
 
-[link-styleci]: https://styleci.io/repos/12345678
+[link-styleci]: https://styleci.io/repos/661637738
 
 [link-author]: https://github.com/wovosoft
 
