@@ -7,21 +7,20 @@ use Illuminate\Support\Collection;
 class Typescript
 {
     public function __construct(
-        public string      $namespace,
-        public string      $model,
-        public string      $shortName,
+        public string $namespace,
+        public string $model,
+        public string $shortName,
         public ?Collection $types = null
-    )
-    {
+    ) {
     }
 
     public function generate(): string
     {
-        return "\texport interface $this->shortName {" . PHP_EOL
-            . $this->types?->implode(function (string|array $value, string $key) {
+        return "\texport interface $this->shortName {".PHP_EOL
+            .$this->types?->implode(function (string|array $value, string $key) {
                 if (is_string($value)) {
                     $value = [
-                        "value" => $value
+                        'value' => $value,
                     ];
                 }
 
@@ -31,6 +30,6 @@ class Typescript
 
                 return "\t\t$key: {$value['value']};";
             }, PHP_EOL)
-            . PHP_EOL . "\t}";
+            .PHP_EOL."\t}";
     }
 }
