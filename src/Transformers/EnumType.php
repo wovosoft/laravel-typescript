@@ -6,13 +6,15 @@ class EnumType
 {
     /**
      * @param class-string<\BackedEnum|\UnitEnum> $enum
+     *
      * @return string
      */
     public static function toTypescript(string $enum): string
     {
         if (enum_exists($enum)) {
-            return collect($enum::cases())->map(fn($option) => "\"$option->value\"")->implode(' | ');
+            return collect($enum::cases())->map(fn ($option) => "\"$option->value\"")->implode(' | ');
         }
-        return "unknown";
+
+        return 'unknown';
     }
 }

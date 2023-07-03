@@ -23,13 +23,14 @@ class TypescriptModelTransformer extends Command
 
     /**
      * Execute the console command.
+     *
      * @throws \Exception
      */
     public function handle(): void
     {
         $transformer = new LaravelTypescript(
-            outputPath: config("laravel-typescript.output_path"),
-            sourceDir: config("laravel-typescript.source_dir")
+            outputPath: config('laravel-typescript.output_path'),
+            sourceDir: config('laravel-typescript.source_dir')
         );
         $transformer->run();
     }

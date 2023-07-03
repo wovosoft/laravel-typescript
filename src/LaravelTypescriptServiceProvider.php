@@ -32,7 +32,7 @@ class LaravelTypescriptServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/laravel-typescript.php', 'laravel-typescript');
+        $this->mergeConfigFrom(__DIR__.'/../config/laravel-typescript.php', 'laravel-typescript');
 
         // Register the service the package provides.
 //        $this->app->singleton('laravel-typescript', function ($app) {
@@ -61,7 +61,7 @@ class LaravelTypescriptServiceProvider extends ServiceProvider
     {
         // Publishing the configuration file.
         $this->publishes([
-            __DIR__ . '/../config/laravel-typescript.php' => config_path('laravel-typescript.php'),
+            __DIR__.'/../config/laravel-typescript.php' => config_path('laravel-typescript.php'),
         ], 'laravel-typescript.config');
 
         // Publishing the views.
@@ -81,7 +81,7 @@ class LaravelTypescriptServiceProvider extends ServiceProvider
 
         // Registering package commands.
         $this->commands([
-            TypescriptModelTransformer::class
+            TypescriptModelTransformer::class,
         ]);
     }
 }

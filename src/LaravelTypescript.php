@@ -11,14 +11,13 @@ class LaravelTypescript
     public function __construct(
         private ?string $outputPath = null,
         private ?string $sourceDir = null,
-    )
-    {
+    ) {
         if (!$this->outputPath) {
-            $this->outputPath = resource_path("js/types/models.d.ts");
+            $this->outputPath = resource_path('js/types/models.d.ts');
         }
 
         if (!$this->sourceDir) {
-            $this->sourceDir = app_path("Models");
+            $this->sourceDir = app_path('Models');
         }
     }
 
