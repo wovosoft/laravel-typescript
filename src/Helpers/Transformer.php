@@ -22,6 +22,7 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionObject;
 use ReflectionUnionType;
+use Wovosoft\LaravelTypescript\Enums\RelationMultipleEnum;
 use Wovosoft\LaravelTypescript\Transformers\Casts;
 use Wovosoft\LaravelTypescript\Transformers\DatabaseType;
 use Wovosoft\LaravelTypescript\Transformers\EnumType;
@@ -31,57 +32,70 @@ use Wovosoft\LaravelTypescript\Transformers\Typescript;
 class Transformer
 {
     /**
-     * @param Collection<int,class-string<Model>> $classes
+     * Main Entry Point of full operation
+     * @param Collection<int,class-string<Model>> $modelsClasses
      *
      * @return string
      */
-    public static function generate(Collection $classes): string
+    public static function generate(Collection $modelsClasses): string
     {
-        return static::getTypes($classes)
+
+        /**
+         * Global Imports shouldn't be done,
+         * cause same short name can be used for different models in different namespace.
+         * which can conflict model namespaces.
+         */
+
+        return static::getTypes($modelsClasses)
             ->groupBy('namespace')
             ->implode(function (Collection $types, string $namespace) {
                 $namespace = str($namespace)->replace('\\', '.')->value();
-                $typescript = PHP_EOL.$types->implode(fn (Typescript $typescriptType) => $typescriptType->generate(), PHP_EOL.PHP_EOL).PHP_EOL;
 
-                return "declare namespace $namespace{ $typescript}";
+                $typescriptNamespace = PHP_EOL .
+                    $types->implode(
+                        fn(Typescript $typescriptType) => $typescriptType->generate(),
+                        PHP_EOL . PHP_EOL
+                    )
+                    . PHP_EOL;
+
+                return "declare namespace $namespace{ $typescriptNamespace}";
             }, PHP_EOL);
     }
 
     /**
-     * @param Collection<int,class-string<Model>> $classes
+     * @param Collection<int,class-string<Model>> $modelsClasses
      *
      * @return Collection<int,Typescript>
      */
-    public static function getTypes(Collection $classes): Collection
+    public static function getTypes(Collection $modelsClasses): Collection
     {
-        return $classes->map(function (string $modelClass) {
+        return $modelsClasses->map(function (string $modelClass) {
             $reflection = (new \ReflectionClass($modelClass));
 
             $model = Models::parseModel($modelClass);
-
-            $contents = static::modelFields($model)
-                ->merge(static::modelRelations($model))
-                ->merge(static::customAttributes($model))
-                ->mapWithKeys(fn ($value, $key) => [$key => $value]);
 
             return new Typescript(
                 namespace: $reflection->getNamespaceName(),
                 model: $reflection->getName(),
                 shortName: $reflection->getShortName(),
-                types: $contents
+                types: static::getFieldsOfModel($model)
+                    ->merge(static::getRelationsOfModel($model))
+                    ->merge(static::getCustomAttributesOfModel($model))
+                    ->mapWithKeys(fn($value, $key) => [$key => $value])
             );
         });
     }
 
     /**
+     * Returns Database columns to be typescript compatible
      * @throws \Exception
      */
-    public static function modelFields(string|Model $model)
+    public static function getFieldsOfModel(string|Model $model)
     {
         $model = Models::parseModel($model);
 
-        return Models::getFieldsOf($model)->mapWithKeys(fn (Column $column) => [
-            $column->getName() => static::transform(item: $model, column: $column),
+        return Models::getFieldsOf($model)->mapWithKeys(fn(Column $column) => [
+            $column->getName() => static::transformData(item: $model, column: $column),
         ]);
     }
 
@@ -90,18 +104,30 @@ class Transformer
      *
      * @throws ReflectionException
      */
-    public static function modelRelations(string|Model $model): Collection
+    public static function getRelationsOfModel(string|Model $model): Collection
     {
         if (is_string($model)) {
             $model = new $model();
         }
 
-        return Models::getRelatedModelsOf($model)->mapWithKeys(fn (ReflectionMethod $reflectionMethod) => [
-            str($reflectionMethod->getName())->snake()->value() => [
-                'isUndefinable' => true,
-                'value'         => static::transform($model->{$reflectionMethod->getName()}()),
-            ],
-        ]);
+        return Models::getMethodsOfRelatedModel($model)
+            ->mapWithKeys(function (ReflectionMethod $reflectionMethod) use ($model) {
+                $relatedModel = $model->{$reflectionMethod->getName()}();
+                $modelReflection = new ReflectionObject($model);
+                $relatedModelReflection = new ReflectionObject($relatedModel->getRelated());
+
+                return [
+                    str($reflectionMethod->getName())->snake()->value() => [
+                        'isUndefinable'      => true,
+                        'value'              => static::transformData($relatedModel),
+                        'return_count_type'  => static::getReturnCountType($relatedModel),
+                        'namespace'          => $modelReflection->getNamespaceName(),
+                        'related_namespace'  => $relatedModelReflection->getNamespaceName(),
+                        'related_class'      => $relatedModelReflection->getName(),
+                        'related_class_name' => $relatedModelReflection->getShortName(),
+                    ],
+                ];
+            });
     }
 
     private static function isOldStyleAttribute(ReflectionMethod $reflectionMethod): bool
@@ -129,31 +155,49 @@ class Transformer
      * @throws ReflectionException
      * @throws \Exception
      */
-    public static function customAttributes(string|Model $model): Collection
+    public static function getCustomAttributesOfModel(string|Model $model): Collection
     {
         $model = Models::parseModel($model);
 
-        return Models::getCustomAttributesOf($model)->mapWithKeys(fn (ReflectionMethod $reflectionMethod) => [
-            static::getCustomAttributeName($reflectionMethod) => static::transform(
+        return Models::getCustomAttributesOf($model)->mapWithKeys(fn(ReflectionMethod $reflectionMethod) => [
+            static::getCustomAttributeName($reflectionMethod) => static::transformData(
                 static::isOldStyleAttribute($reflectionMethod) ? $reflectionMethod->getReturnType()
                     : (new ReflectionFunction($model->{$reflectionMethod->getName()}()->get))->getReturnType()
             ),
         ]);
     }
 
-    public static function transform(
-        ReflectionUnionType|ReflectionNamedType|Model|Relation|null $item = null,
-        Column|null $column = null
-    ): string {
+    public static function getReturnCountType(
+        ReflectionUnionType|ReflectionNamedType|Model|Relation|null $item = null
+    ): RelationMultipleEnum
+    {
         if ($item instanceof Relation) {
-            $shorName = (new ReflectionObject($item->getRelated()))->getShortName();
+            return match (get_class($item)) {
+                HasMany::class, HasManyThrough::class,
+                BelongsToMany::class, MorphMany::class, MorphToMany::class => RelationMultipleEnum::Multiple,
+                MorphOneOrMany::class                                      => RelationMultipleEnum::Multiple_Or_Single,
+                default                                                    => RelationMultipleEnum::Single
+            };
+        }
+
+        return RelationMultipleEnum::Single;
+    }
+
+    public static function transformData(
+        ReflectionUnionType|ReflectionNamedType|Model|Relation|null $item = null,
+        Column|null                                                 $column = null
+    ): string
+    {
+        if ($item instanceof Relation) {
+            $reflection = (new ReflectionObject($item->getRelated()));
+            $shorName = $reflection->getShortName();
 
             return match (get_class($item)) {
-                HasOne::class, HasOneThrough::class, BelongsTo::class, MorphOne::class => "{$shorName} | null",
+                HasOne::class, HasOneThrough::class, BelongsTo::class, MorphOne::class => "$shorName | null",
                 HasMany::class, HasManyThrough::class,
-                BelongsToMany::class, MorphMany::class, MorphToMany::class => "{$shorName}[] | null",
-                MorphOneOrMany::class => "{$shorName} | {$shorName}[] | null",
-                default               => 'any'
+                BelongsToMany::class, MorphMany::class, MorphToMany::class             => "{$shorName}[] | null",
+                MorphOneOrMany::class                                                  => "$shorName | {$shorName}[] | null",
+                default                                                                => 'any'
             };
         }
 
@@ -176,7 +220,9 @@ class Transformer
 
         if ($item instanceof ReflectionUnionType) {
             return collect($item->getTypes())
-                ->implode(fn (ReflectionNamedType $namedType) => PhpType::toTypescript($namedType->getName()), ' | ');
+                ->implode(function (ReflectionNamedType $namedType) {
+                    return PhpType::toTypescript($namedType->getName());
+                }, ' | ');
         }
 
         return PhpType::toTypescript($item?->getName());

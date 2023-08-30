@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use ReflectionException;
 use ReflectionMethod;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 class Models
 {
@@ -19,18 +22,18 @@ class Models
          */
 
         return collect(array_keys(ClassMapGenerator::createMap($directory)))
-            ->filter(fn ($class) => is_subclass_of($class, Model::class));
+            ->filter(fn($class) => is_subclass_of($class, Model::class));
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws \Exception
      */
     public static function getCustomAttributesOf(string|Model $model): Collection
     {
         return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
             ->filter(
-                fn (ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
+                fn(ReflectionMethod $reflectionMethod) => static::isMethodIsModelAttribute($reflectionMethod)
             );
     }
 
@@ -38,29 +41,33 @@ class Models
     {
         $methodName = str($reflectionMethod->getName());
 
+        if ($reflectionMethod->getReturnType() instanceof ReflectionUnionType) {
+            return false;
+        }
+
         return (
-            $methodName->startsWith('get')
-            && $methodName->endsWith('Attribute')
-            && $methodName->value() !== 'getAttribute'
-        ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
+                $methodName->startsWith('get')
+                && $methodName->endsWith('Attribute')
+                && $methodName->value() !== 'getAttribute'
+            ) || ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
     }
 
     /**
      * @param class-string<Model>|Model $model
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws \Exception
      */
-    public static function getRelatedModelsOf(string|Model $model): Collection
+    public static function getMethodsOfRelatedModel(string|Model $model): Collection
     {
         return collect((new \ReflectionClass(static::parseModel($model)))->getMethods())
-            ->filter(fn (ReflectionMethod $method) => static::isRelation($method));
+            ->filter(fn(ReflectionMethod $method) => static::isRelation($method));
     }
 
     private static function isRelation(ReflectionMethod $method): bool
     {
         return $method->hasReturnType()
-            && $method->getReturnType() instanceof \ReflectionNamedType
+            && $method->getReturnType() instanceof ReflectionNamedType
             && is_subclass_of($method->getReturnType()->getName(), Relation::class);
     }
 
