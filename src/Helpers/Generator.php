@@ -29,22 +29,51 @@ class Generator
     }
 
     /**
+     * @return string
+     * @throws ReflectionException
+     */
+    public function __toString(): string
+    {
+        return $this->toTypescript();
+    }
+
+    /**
      * @throws ReflectionException
      */
     public function generate()
     {
-        return $this
-            ->getColumnDefinitions()
-            ->merge($this->getCustomAttributeDefinitions())
-            ->merge($this->getRelationDefinitions())
+        return $this->getDefinitions()
             ->map(function (Definition $definition, string $key) {
                 return (string)$definition;
             });
     }
 
-    public function __toString(): string
+    /**
+     * @throws ReflectionException
+     */
+    public function getDefinitions()
     {
-        return $this->generate()->toJson();
+        return $this
+            ->getColumnDefinitions()
+            ->merge($this->getCustomAttributeDefinitions())
+            ->merge($this->getRelationDefinitions());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function toTypescript(): string
+    {
+        $typings = $this
+            ->getDefinitions()
+            ->implode(function (Definition $definition, string $key) {
+                return "\t\t$key " . ($definition->isUndefinable ? '?' : '') . ": $definition;";
+            }, PHP_EOL);
+
+        $reflection = new ReflectionClass($this->result->getModel());
+        return str($typings)
+            ->prepend("\texport interface " . ($reflection->getShortName()) . "{" . PHP_EOL)
+            ->append(PHP_EOL . "\t}" . PHP_EOL);
     }
 
     /**
@@ -59,17 +88,18 @@ class Generator
             ->getColumns()
             ->map(function (Column $column) use ($modelReflection) {
                 return new Definition(
-                    namespace: $modelReflection->getNamespaceName(),
-                    name: $column->getName(),
-                    model: $modelReflection->getName(),
-                    types: [
+                    namespace     : $modelReflection->getNamespaceName(),
+                    name          : $column->getName(),
+                    model         : $modelReflection->getName(),
+                    modelShortName: $modelReflection->getShortName(),
+                    types         : [
                         new Type(
-                            name: ColumnType::toTypescript($column->getType()),
+                            name      : ColumnType::toTypescript($column->getType()),
                             isMultiple: false
                         )
                     ],
-                    isRequired: $column->getNotnull(),
-                    isUndefinable: false
+                    isRequired    : $column->getNotnull(),
+                    isUndefinable : false
                 );
             });
     }
@@ -84,18 +114,23 @@ class Generator
             ->mapWithKeys(function (ReflectionMethod $method) {
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace: $method->getDeclaringClass()->getNamespaceName(),
-                        name: $this->qualifyAttributeName($method),
-                        model: $method->getDeclaringClass()?->getName(),
-                        types: $this->getReturnTypes($method),
-                        isRequired: $this->isRequiredReturnType($method),
-                        isUndefinable: true
+                        namespace     : $method->getDeclaringClass()->getNamespaceName(),
+                        name          : $this->qualifyAttributeName($method),
+                        model         : $method->getDeclaringClass()?->getName(),
+                        modelShortName: $method->getDeclaringClass()->getShortName(),
+                        types         : $this->getReturnTypes($method),
+                        isRequired    : $this->isRequiredReturnType($method),
+                        isUndefinable : true
                     )
                 ];
             });
     }
 
-    private function getRelationDefinitions()
+    /**
+     * @description Returns definitions of relations
+     * @return Collection<int,Definition>
+     */
+    private function getRelationDefinitions(): Collection
     {
         if ($this->result->getModel() instanceof Model) {
             $model = $this->result->getModel();
@@ -110,16 +145,15 @@ class Generator
                 /* @var Model $relatedModel */
                 $relatedModel = $model->{$method->getName()}()->getRelated();
 
-                dump($method->getReturnType()->getName());
-
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace: $method->getDeclaringClass()->getNamespaceName(),
-                        name: $method->getName(),
-                        model: $method->getDeclaringClass()->getName(),
-                        types: [
+                        namespace     : $method->getDeclaringClass()->getNamespaceName(),
+                        name          : $method->getName(),
+                        model         : $method->getDeclaringClass()->getName(),
+                        modelShortName: $method->getDeclaringClass()->getShortName(),
+                        types         : [
                             new Type(
-                                name: get_class($relatedModel),
+                                name      : get_class($relatedModel),
                                 isMultiple: match ($method->getReturnType()->getName()) {
                                     //HasOne::class,
                                     //HasOneThrough::class,
@@ -141,17 +175,19 @@ class Generator
                                 }
                             )
                         ],
-                        isRequired: false,
-                        isUndefinable: true
+                        isRequired    : false,
+                        isUndefinable : true
                     )
                 ];
             });
     }
 
     /**
+     * @param ReflectionMethod $method
+     * @return Collection<int,Type>
      * @throws ReflectionException
      */
-    private function getReturnTypes(ReflectionMethod $method): array
+    private function getReturnTypes(ReflectionMethod $method): Collection
     {
         if (Attributes::isNewStyled($method)) {
             $type = Attributes::getReflectionOfNewStyleAttribute($method)->getReturnType();
@@ -162,7 +198,7 @@ class Generator
         if ($type instanceof ReflectionNamedType) {
             $types = [$type];
         } else {
-            $types = $type->getTypes();
+            $types = $type?->getTypes();
         }
 
         return collect($types)
@@ -172,14 +208,14 @@ class Generator
                      * @todo In php it is not possible to define array's member type
                      *       but in docblock it is possible. So, do it later.
                      */
-//                    if ($type->getName() === "array") {
-//                        $doc = new DocBlock($method->getDocComment());
-//                        if ($doc->hasTag('return')) {
-//                            /** @var DocBlock\Tag\ReturnTag $returnTag */
-//                            $returnTag = $doc->getTagsByName('return')[0];
-//                            dump($returnTag->getTypes());
-//                        }
-//                    }
+                    //if ($type->getName() === "array") {
+                    //    $doc = new DocBlock($method->getDocComment());
+                    //    if ($doc->hasTag('return')) {
+                    //        /** @var DocBlock\Tag\ReturnTag $returnTag */
+                    //        $returnTag = $doc->getTagsByName('return')[0];
+                    //        dump($returnTag->getTypes());
+                    //    }
+                    //}
 
                     $name = PhpType::toTypescript($type->getName() ?: null);
                 } else {
@@ -187,11 +223,10 @@ class Generator
                 }
 
                 return new Type(
-                    name: $name,
+                    name      : $name,
                     isMultiple: false
                 );
-            })
-            ->toArray();
+            });
     }
 
     private function qualifyAttributeName(ReflectionMethod $method): string
@@ -234,10 +269,10 @@ class Generator
              * callback named get.
              */
 
-            return !Attributes::getReflectionOfNewStyleAttribute($method)->getReturnType()->allowsNull();
+            return !Attributes::getReflectionOfNewStyleAttribute($method)->getReturnType()?->allowsNull();
         }
 
-        return !$method->getReturnType()->allowsNull();
+        return !$method->getReturnType()?->allowsNull();
     }
 }
 

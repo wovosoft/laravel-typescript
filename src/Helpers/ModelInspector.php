@@ -18,22 +18,29 @@ class ModelInspector
      */
     private string|Model $model;
 
+    /**
+     * @description Returns the list of model-classes in a directory
+     * @param string $directory
+     * @return Collection<int,class-string<Model>>
+     * @link https://github.com/composer/class-map-generator
+     */
     public static function getModelsIn(string $directory): Collection
     {
-        /**
-         * @link https://github.com/composer/class-map-generator
-         */
-
         return collect(array_keys(ClassMapGenerator::createMap($directory)))
             ->filter(fn($class) => is_subclass_of($class, Model::class));
     }
 
+    /**
+     * @description Returns new instance of the Model Inspector class
+     * @return static
+     */
     public static function new(): static
     {
         return new static();
     }
 
     /**
+     * @description Used to set Model class for inspection
      * @param class-string<Model>|Model $model
      * @return $this
      */
@@ -44,6 +51,8 @@ class ModelInspector
     }
 
     /**
+     * @description Returns model inspection result which contains
+     *              list of database columns, custom attributes and relations.
      * @return ModelInspectionResult
      * @throws Exception
      * @throws ReflectionException
@@ -51,14 +60,15 @@ class ModelInspector
     public function getInspectionResult(): ModelInspectionResult
     {
         return new ModelInspectionResult(
-            model: $this->model,
-            columns: $this->getColumns(),
+            model            : $this->model,
+            columns          : $this->getColumns(),
             custom_attributes: $this->getCustomAttributes(),
-            relations: $this->getRelations()
+            relations        : $this->getRelations()
         );
     }
 
     /**
+     * @description Returns Collection of Database columns
      * @return Collection<int,Column>
      * @throws Exception
      * @throws \Exception

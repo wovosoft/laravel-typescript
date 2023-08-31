@@ -10,8 +10,8 @@ use ReflectionMethod;
 class ModelInspectionResult
 {
     /**
-     * @param class-string<Model>|Model        $model
-     * @param Collection<int,Column>           $columns
+     * @param class-string<Model>|Model $model
+     * @param Collection<int,Column> $columns
      * @param Collection<int,ReflectionMethod> $custom_attributes
      * @param Collection<int,ReflectionMethod> $relations
      */
@@ -22,6 +22,11 @@ class ModelInspectionResult
         private readonly Collection   $relations
     )
     {
+    }
+
+    public function __toString(): string
+    {
+        return $this->getGenerator();
     }
 
     public function getModel(): Model|string
@@ -56,5 +61,10 @@ class ModelInspectionResult
     public function getGenerator(): Generator
     {
         return new Generator($this);
+    }
+
+    public function toTypescript(): string
+    {
+        return (string)$this->getGenerator();
     }
 }
