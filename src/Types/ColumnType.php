@@ -6,12 +6,12 @@ use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\DBAL\Types\Type;
 
-class Map
+class ColumnType
 {
     /**
      * @throws Exception
      */
-    public static function dbToTypescript(Type $type): string
+    public static function toTypescript(Type $type): string
     {
         return match (Type::getTypeRegistry()->lookupName($type)) {
             Types::ARRAY,
@@ -44,18 +44,5 @@ class Map
             Types::OBJECT         => "{[key:string]:any}",
             default               => "any"
         };
-    }
-
-    /**
-     * @param class-string<\BackedEnum> $enum
-     * @return string
-     */
-    public function enumToTypescript(string $enum): string
-    {
-        if (enum_exists($enum)) {
-            return collect($enum::cases())->map(fn($option) => "\"$option->value\"")->implode(' | ');
-        }
-
-        return 'any';
     }
 }
