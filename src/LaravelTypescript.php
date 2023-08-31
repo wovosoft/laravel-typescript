@@ -3,7 +3,7 @@
 namespace Wovosoft\LaravelTypescript;
 
 use Illuminate\Support\Facades\File;
-use Wovosoft\LaravelTypescript\Helpers\Models;
+use Wovosoft\LaravelTypescript\Helpers\ModelInspector;
 use Wovosoft\LaravelTypescript\Helpers\Transformer;
 
 class LaravelTypescript
@@ -27,7 +27,7 @@ class LaravelTypescript
 
         File::put(
             path: $this->outputPath,
-            contents: Transformer::generate(Models::in($this->sourceDir))
+            contents: Transformer::generate(ModelInspector::getModelsIn($this->sourceDir))
         );
     }
 }

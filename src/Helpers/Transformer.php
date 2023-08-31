@@ -72,7 +72,7 @@ class Transformer
         return $modelsClasses->map(function (string $modelClass) {
             $reflection = (new \ReflectionClass($modelClass));
 
-            $model = Models::parseModel($modelClass);
+            $model = ModelInspector::parseModel($modelClass);
 
             return new Typescript(
                 namespace: $reflection->getNamespaceName(),
@@ -92,9 +92,9 @@ class Transformer
      */
     public static function getFieldsOfModel(string|Model $model)
     {
-        $model = Models::parseModel($model);
+        $model = ModelInspector::parseModel($model);
 
-        return Models::getFieldsOf($model)->mapWithKeys(fn(Column $column) => [
+        return ModelInspector::getColumns($model)->mapWithKeys(fn(Column $column) => [
             $column->getName() => static::transformData(item: $model, column: $column),
         ]);
     }
@@ -110,7 +110,7 @@ class Transformer
             $model = new $model();
         }
 
-        return Models::getMethodsOfRelatedModel($model)
+        return ModelInspector::getRelationMethods($model)
             ->mapWithKeys(function (ReflectionMethod $reflectionMethod) use ($model) {
                 $relatedModel = $model->{$reflectionMethod->getName()}();
                 $modelReflection = new ReflectionObject($model);
@@ -157,9 +157,9 @@ class Transformer
      */
     public static function getCustomAttributesOfModel(string|Model $model): Collection
     {
-        $model = Models::parseModel($model);
+        $model = ModelInspector::parseModel($model);
 
-        return Models::getCustomAttributesOf($model)->mapWithKeys(fn(ReflectionMethod $reflectionMethod) => [
+        return ModelInspector::getCustomAttributes($model)->mapWithKeys(fn(ReflectionMethod $reflectionMethod) => [
             static::getCustomAttributeName($reflectionMethod) => static::transformData(
                 static::isOldStyleAttribute($reflectionMethod) ? $reflectionMethod->getReturnType()
                     : (new ReflectionFunction($model->{$reflectionMethod->getName()}()->get))->getReturnType()

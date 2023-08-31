@@ -5,7 +5,7 @@
 
 use Wovosoft\LaravelTypescript\Helpers;
 
-$modelClasses = Helpers\Models::in(app_path('Models'));
+$modelClasses = Helpers\ModelInspector::getModelsIn(app_path('Models'));
 
 
 
