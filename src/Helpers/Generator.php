@@ -33,9 +33,9 @@ class Generator
     /**
      * @description Get all definitions
      *
+     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
-     * @return Collection<int,Definition>
      */
     public function getDefinitions(): Collection
     {
@@ -48,9 +48,9 @@ class Generator
     /**
      * @description Generates interface
      *
+     * @return string
      * @throws ReflectionException
      *
-     * @return string
      */
     public function __toString(): string
     {
@@ -67,23 +67,23 @@ class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $definition, string $key) {
-                return "\t\t$key".($definition->isUndefinable ? '?' : '').": $definition;";
+                return "\t\t$key" . ($definition->isUndefinable ? '?' : '') . ": $definition;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface ".$reflection->getShortName().' {'.PHP_EOL)
-            ->append(PHP_EOL."\t}");
+            ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
+            ->append(PHP_EOL . "\t}");
     }
 
     /**
      * @description Returns database column definitions
      *
-     * @throws ReflectionException
+     * @return Collection<int,Definition>
      * @throws Exception
      *
-     * @return Collection<int,Definition>
+     * @throws ReflectionException
      */
     private function getColumnDefinitions(): Collection
     {
@@ -151,7 +151,7 @@ class Generator
             ->getCustomAttributes()
             ->mapWithKeys(function (ReflectionMethod $method) {
                 $decClass = $method->getDeclaringClass();
-                $types = $this->getReturnTypes($method);
+                $types = $this->getAttributeReturnTypes($method);
 
                 /*
                  * When there is return type is not defined
@@ -182,9 +182,9 @@ class Generator
     /**
      * @description Returns definitions of relations
      *
+     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
-     * @return Collection<int,Definition>
      */
     private function getRelationDefinitions(): Collection
     {
@@ -263,11 +263,11 @@ class Generator
      *
      * @param ReflectionMethod $method
      *
+     * @return Collection<int,Type>
      * @throws ReflectionException
      *
-     * @return Collection<int,Type>
      */
-    private function getReturnTypes(ReflectionMethod $method): Collection
+    private function getAttributeReturnTypes(ReflectionMethod $method): Collection
     {
         if (Attributes::isNewStyled($method)) {
             $type = Attributes::getReflectionOfNewStyleAttribute($method)->getReturnType();
@@ -298,8 +298,12 @@ class Generator
                     //}
 
                     $name = PhpType::toTypescript($type->getName() ?: config('laravel-typescript.custom_attributes.fallback_return_type'));
+                } elseif (enum_exists($type->getName())) {
+                    $name = EnumType::toTypescript($type->getName());
+                } elseif (ModelInspector::isModelClassOrObject($type->getName())) {
+                    $name = $this->getQualifiedNamespace($type->getName());
                 } else {
-                    $name = $type->getName() ?: 'any';
+                    $name = "any";
                 }
 
                 return new Type(
@@ -359,5 +363,10 @@ class Generator
         }
 
         return !$method->getReturnType()?->allowsNull();
+    }
+
+    private function getQualifiedNamespace(string $name): string
+    {
+        return str($name)->replace("\\", ".")->value();
     }
 }

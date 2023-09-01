@@ -18,7 +18,8 @@ class ModelInspector
      */
     public function __construct(
         private string|Model|null $model = null
-    ) {
+    )
+    {
     }
 
     /**
@@ -37,9 +38,18 @@ class ModelInspector
         }
 
         return collect($directories)
-            ->map(fn (string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
+            ->map(fn(string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
             ->collapse()
-            ->filter(fn ($class) => is_subclass_of($class, Model::class));
+            ->filter(fn($class) => static::isModelClassOrObject($class));
+    }
+
+    public static function isModelClassOrObject(string|Model $model): bool
+    {
+        if (is_string($model) && class_exists($model)) {
+            return is_subclass_of($model, Model::class);
+        }
+
+        return $model instanceof Model;
     }
 
     /**
@@ -74,11 +84,11 @@ class ModelInspector
      * @description Returns model inspection result which contains
      *              list of database columns, custom attributes and relations.
      *
-     * @throws Exception
+     * @return ModelInspectionResult
      * @throws ReflectionException
      * @throws \Exception
      *
-     * @return ModelInspectionResult
+     * @throws Exception
      */
     public function getInspectionResult(): ModelInspectionResult
     {
@@ -95,10 +105,10 @@ class ModelInspector
     /**
      * @description Returns Collection of Database columns
      *
-     * @throws Exception
+     * @return Collection<int,Column>
      * @throws \Exception
      *
-     * @return Collection<int,Column>
+     * @throws Exception
      */
     private function getColumns(): Collection
     {
@@ -118,46 +128,46 @@ class ModelInspector
          * So, those fields are being forgotten (omitted) from the collection.
          */
         return collect($columns)
-            ->when(!empty($model->getHidden()), fn (Collection $cols) => $cols->forget($model->getHidden()));
+            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
     }
 
     /**
      * @description Returns methods which are used to define Custom Attributes
      *
+     * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
      *
-     * @return Collection<int,ReflectionMethod>
      */
     private function getCustomAttributes(): Collection
     {
         return collect((new ReflectionClass($this->model))->getMethods())
             ->filter(
-                fn (ReflectionMethod $rf) => Attributes::isAttribute($rf)
+                fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
             );
     }
 
     /**
      * @description Returns methods of a given model, which are used to define relations
      *
-     * @throws ReflectionException
+     * @return Collection<int,ReflectionMethod>
      * @throws \Exception
      *
-     * @return Collection<int,ReflectionMethod>
+     * @throws ReflectionException
      */
     private function getRelations(): Collection
     {
         $this->isModelSet();
 
         return collect((new ReflectionClass($this->model))->getMethods())
-            ->filter(fn (ReflectionMethod $rf) => Attributes::isRelation($rf));
+            ->filter(fn(ReflectionMethod $rf) => Attributes::isRelation($rf));
     }
 
     /**
      * @param class-string<Model>|Model $model
      *
+     * @return Model
      * @throws \Exception
      *
-     * @return Model
      */
     public static function parseModel(string|Model $model): Model
     {
