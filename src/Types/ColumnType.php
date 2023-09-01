@@ -26,7 +26,6 @@ class ColumnType
             Types::DATETIMETZ_MUTABLE,
             Types::DATETIMETZ_IMMUTABLE,
             Types::GUID,
-            Types::JSON,
             Types::STRING,
             Types::TEXT,
             Types::TIME_MUTABLE,
@@ -41,6 +40,13 @@ class ColumnType
             Types::BINARY,
             Types::BLOB           => "unknown",
             Types::BOOLEAN        => "boolean",
+
+            /*
+             * JSON/OBJECT/ARRAY should be checked in more detail.
+             * It's schema can be retried to generate more accurate
+             * interface in upcoming versions.
+             */
+            Types::JSON,
             Types::OBJECT         => "{[key:string]:any}",
             default               => "any"
         };

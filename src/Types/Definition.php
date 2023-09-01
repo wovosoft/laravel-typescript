@@ -4,6 +4,11 @@ namespace Wovosoft\LaravelTypescript\Types;
 
 use Illuminate\Support\Collection;
 
+/**
+ * @description Simplified Definition of each
+ *              property/attribute, which will be directly
+ *              used to generate typescript key=>value pairs
+ */
 class Definition
 {
     /**

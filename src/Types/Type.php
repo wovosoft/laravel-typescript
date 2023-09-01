@@ -4,6 +4,9 @@ namespace Wovosoft\LaravelTypescript\Types;
 
 use Wovosoft\LaravelTypescript\RelationType;
 
+/**
+ * @description Contains Information about each type
+ */
 class Type
 {
     public function __construct(
@@ -32,15 +35,18 @@ class Type
     {
         $name = $this->getQualifiedName();
 
+        /**
+         * When the type is of Relation, it can be of one, multiple or one_many in number
+         */
         if ($this->isMultiple instanceof RelationType) {
-            return match ($this->isMultiple) {
-                //RelationType::One       => $this->name,
+            return match ($this->getIsMultiple()) {
                 RelationType::Many      => $name . "[]",
                 RelationType::OneOrMany => implode(" | ", [$name, $name . "[]"]),
+                //RelationType::One       => $name,
                 default                 => $name
             };
         }
 
-        return $name . ($this->isMultiple ? '[]' : '');
+        return $name . ($this->getIsMultiple() ? '[]' : '');
     }
 }

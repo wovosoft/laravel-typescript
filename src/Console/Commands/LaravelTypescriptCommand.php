@@ -1,6 +1,6 @@
 <?php
 
-namespace Wovosoft\LaravelTypescript\Commands;
+namespace Wovosoft\LaravelTypescript\Console\Commands;
 
 use Illuminate\Console\Command;
 use Wovosoft\LaravelTypescript\Facades\LaravelTypescript;

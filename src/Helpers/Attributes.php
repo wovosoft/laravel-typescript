@@ -2,6 +2,7 @@
 
 namespace Wovosoft\LaravelTypescript\Helpers;
 
+use Exception;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use ReflectionException;
@@ -15,7 +16,7 @@ class Attributes
     /**
      * @description Determines here a model method defines custom attribute or not.
      *              Custom attributes can be defined in two ways.
-     *              1. get{PropName}Attribute()
+     *              1. get{PropName}Attribute():type
      *              2. propName():Attribute
      *              If the method starts with get and ends with Attribute, then the
      *              middle part would be the prop name.
@@ -65,7 +66,7 @@ class Attributes
     }
 
     /**
-     * @description Determines of the attribute if of new style or old style
+     * @description Determines if the attribute is of new style or old style
      * @param ReflectionMethod $method
      * @return bool
      */
@@ -75,12 +76,12 @@ class Attributes
             return false;
         }
 
-        if ($method->getReturnType() instanceof ReflectionUnionType) {
-            return false;
-        }
-
         $name = str($method->getName());
 
+        /*
+         * First we check if it is of old style attribute
+         * old style attributes are defined like, 'get{PropName}Attribute()'
+         */
         if (
             $name->startsWith("get")
             && $name->endsWith("Attribute")
@@ -89,20 +90,38 @@ class Attributes
             return false;
         }
 
+        /**
+         * New style attributes doesn't return multiple values,
+         * it returns only one, and it is of type
+         * @link \Illuminate\Database\Eloquent\Casts\Attribute::class
+         */
+        if ($method->getReturnType() instanceof ReflectionUnionType) {
+            return false;
+        }
+
+        /*
+         * If return type is exactly of Illuminate\Database\Eloquent\Casts\Attribute::class,
+         * then it is of new style attribute
+         */
         return $method->getReturnType()->getName() === Attribute::class;
     }
 
     /**
      * @description Get Reflection of new style attributes 'get' method
      *              This method should be called for new style attributes only.
+     * @note In most cases, it is safe to retrieve types in this way,
+     *      because, calling new styled attribute doesn't make any database/php operations,
+     *      it just returns an instance of Attribute::class
+     *
+     * @note It is safe to check if the method defines new style attribute before calling this function
      * @param ReflectionMethod $method
      * @return ReflectionFunction
      * @throws ReflectionException
+     * @throws Exception
      */
     public static function getReflectionOfNewStyleAttribute(ReflectionMethod $method): ReflectionFunction
     {
-        $modelClass = $method->getDeclaringClass()->getName();
-        $model = new $modelClass;
+        $model = ModelInspector::parseModel($method->getDeclaringClass()->getName());
 
         return new ReflectionFunction($model->{$method->getName()}()->get);
     }

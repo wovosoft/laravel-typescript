@@ -2,8 +2,6 @@
 
 namespace Wovosoft\LaravelTypescript\Types;
 
-use function Laravel\Prompts\select;
-
 enum PhpType: string
 {
     case INT     = 'int';
@@ -23,13 +21,23 @@ enum PhpType: string
         }
 
         return match ($type) {
-            self::INT, self::FLOAT, self::DOUBLE => 'number',
-            self::ARRAY                          => 'any[]',
-            self::OBJECT                         => '{[key:string]:any}',
-            self::STRING                         => 'string',
-            self::NULL                           => 'null',
-            self::BOOLEAN, self::BOOL            => 'boolean',
-            default                              => 'any'
+            self::INT,
+            self::FLOAT,
+            self::DOUBLE              => 'number',
+
+            /*
+             * @todo : docblock should be checked to have exact array of type
+             */
+            self::ARRAY               => 'any[]',
+            /*
+             * @todo :  Rather than just generating a generic object interface,
+             * more detailed interface can be generated in future versions.
+             */
+            self::OBJECT              => '{[key:string]:any}',
+            self::STRING              => 'string',
+            self::NULL                => 'null',
+            self::BOOLEAN, self::BOOL => 'boolean',
+            default                   => 'any'
         };
     }
 }

@@ -63,8 +63,7 @@ class LaravelTypescript
                 return "declare namespace $namespace {" . PHP_EOL
                     . $modelClasses
                         ->map(
-                            fn(string $modelClass) => (string)ModelInspector::new()
-                                ->inspectionFor($modelClass)
+                            fn(string $modelClass) => (string)ModelInspector::new($modelClass)
                                 ->getInspectionResult()
                                 ->getGenerator()
                         )

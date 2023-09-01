@@ -24,11 +24,18 @@ class ModelInspectionResult
     {
     }
 
+    /**
+     * @description Generates the model interface
+     * @return string
+     */
     public function __toString(): string
     {
         return $this->getGenerator();
     }
 
+    /**
+     * @return Model|string
+     */
     public function getModel(): Model|string
     {
         return $this->model;

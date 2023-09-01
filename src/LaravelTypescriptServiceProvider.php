@@ -3,7 +3,7 @@
 namespace Wovosoft\LaravelTypescript;
 
 use Illuminate\Support\ServiceProvider;
-use Wovosoft\LaravelTypescript\Commands\LaravelTypescriptCommand;
+use Wovosoft\LaravelTypescript\Console\Commands\LaravelTypescriptCommand;
 
 class LaravelTypescriptServiceProvider extends ServiceProvider
 {

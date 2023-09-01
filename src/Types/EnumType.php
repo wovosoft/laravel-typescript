@@ -1,7 +1,9 @@
 <?php
 
 namespace Wovosoft\LaravelTypescript\Types;
-
+/**
+ * @description Converts PHP Enum types to Typescript Union Type
+ */
 enum EnumType
 {
 

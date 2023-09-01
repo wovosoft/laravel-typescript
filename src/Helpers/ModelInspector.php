@@ -14,9 +14,14 @@ use ReflectionMethod;
 class ModelInspector
 {
     /**
-     * @var class-string<Model>|Model
+     * @param class-string<Model>|Model|null $model
      */
-    private string|Model $model;
+    public function __construct(
+        private string|Model|null $model = null
+    )
+    {
+
+    }
 
     /**
      * @description Returns the list of model-classes in a directory
@@ -37,12 +42,14 @@ class ModelInspector
     }
 
     /**
-     * @description Returns new instance of the Model Inspector class
+     * @description Returns new instance of the Model Inspector class.
+     * @note If value for $model is provided @method inspectionFor() doesn't need to be used
+     * @param class-string<Model>|Model|null $model
      * @return static
      */
-    public static function new(): static
+    public static function new(string|Model|null $model = null): static
     {
-        return new static();
+        return new static($model);
     }
 
     /**
@@ -62,9 +69,12 @@ class ModelInspector
      * @return ModelInspectionResult
      * @throws Exception
      * @throws ReflectionException
+     * @throws \Exception
      */
     public function getInspectionResult(): ModelInspectionResult
     {
+        $this->isModelSet();
+
         return new ModelInspectionResult(
             model            : $this->model,
             columns          : $this->getColumns(),
@@ -81,6 +91,8 @@ class ModelInspector
      */
     private function getColumns(): Collection
     {
+        $this->isModelSet();
+
         $model = static::parseModel($this->model);
 
         $columns = $model
@@ -91,33 +103,36 @@ class ModelInspector
 
         /**
          * Model fields name should be exact like column name.
+         * Fields which are marked as hidden, should not be generated.
+         * So, those fields are being forgotten (omitted) from the collection
          */
         return collect($columns)
             ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
     }
 
     /**
-     * @description Methods of model which are defined to describe custom attributes,
-     *              should be added in props of the generating typescript interface
+     * @description Returns methods which are used to define Custom Attributes
      * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
      */
     private function getCustomAttributes(): Collection
     {
-        $reflectionMethods = (new ReflectionClass($this->model))->getMethods();
-
-        return collect($reflectionMethods)->filter(
-            fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
-        );
+        return collect((new ReflectionClass($this->model))->getMethods())
+            ->filter(
+                fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
+            );
     }
 
     /**
      * @description Returns methods of a given model, which are used to define relations
      * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
+     * @throws \Exception
      */
     private function getRelations(): Collection
     {
+        $this->isModelSet();
+
         return collect((new ReflectionClass($this->model))->getMethods())
             ->filter(fn(ReflectionMethod $rf) => Attributes::isRelation($rf));
     }
@@ -137,5 +152,16 @@ class ModelInspector
         }
 
         return $model;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    private function isModelSet(): bool
+    {
+        if (!isset($this->model)) {
+            throw new \Exception("Model Not Set");
+        }
+        return true;
     }
 }

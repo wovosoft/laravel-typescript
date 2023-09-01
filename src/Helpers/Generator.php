@@ -32,6 +32,7 @@ class Generator
 
 
     /**
+     * @description Get all definitions
      * @return Collection<int,Definition>
      * @throws ReflectionException
      */
@@ -44,6 +45,7 @@ class Generator
     }
 
     /**
+     * @description Generates interface
      * @return string
      * @throws ReflectionException
      */
@@ -53,6 +55,7 @@ class Generator
     }
 
     /**
+     * @description Generates interface
      * @throws ReflectionException
      */
     public function toTypescript(): string
@@ -71,6 +74,7 @@ class Generator
     }
 
     /**
+     * @description Returns database column definitions
      * @return Collection<int,Definition>
      * @throws ReflectionException
      * @throws Exception
@@ -83,13 +87,31 @@ class Generator
         return $this->result
             ->getColumns()
             ->map(function (Column $column, string $key) use ($model, $modelReflection) {
+                /*
+                 * Database columns can be cast in different format
+                 */
                 if ($model->hasCast($key)) {
+                    /*
+                     * When, the cast is of type Enum it should be rendered as union type
+                     * @todo : Rendered union type can be stored in separate scope rather then being
+                     *         rendered as values directly.
+                     */
                     if (is_string($model->getCasts()[$key]) && enum_exists($model->getCasts()[$key])) {
                         $type = new Type(
                             name      : EnumType::toTypescript($model->getCasts()[$key]),
                             isMultiple: false
                         );
-                    } else {
+                    } /*
+                     * @todo : Configurable casts can be used.
+                     *        [
+                     *          ...
+                     *          "casts"=>[
+                     *              "immutable_datetime"=>ImmutableDatetimeRenderer::class
+                     *          ]
+                     *          ...
+                     *          ]
+                     */
+                    else {
                         $type = new Type(
                             name      : PhpType::toTypescript($model->getCasts()[$key]),
                             isMultiple: false
@@ -125,6 +147,9 @@ class Generator
                 $decClass = $method->getDeclaringClass();
                 $types = $this->getReturnTypes($method);
 
+                /*
+                 * When there is return type is not defined
+                 */
                 if ($types->isEmpty()) {
                     $types->add(
                         new Type(
@@ -169,22 +194,29 @@ class Generator
             ->mapWithKeys(function (ReflectionMethod $method) use ($model, $modelReflection) {
                 /* @var Model $relatedModel */
                 $relatedModel = $model->{$method->getName()}()->getRelated();
-                $decClass = $method->getDeclaringClass();
 
                 $relatedModelReflection = new ReflectionClass($relatedModel);
 
+                /*
+                 * When Model and Related Morels are from same namespace,
+                 * only short name is enough
+                 */
                 if ($relatedModelReflection->getNamespaceName() === $modelReflection->getNamespaceName()) {
                     $typeName = $relatedModelReflection->getShortName();
-                } else {
+                } /*
+                 * When Model and Related Model are from different namespaces,
+                 * full namespace name should be used.
+                 */
+                else {
                     $typeName = $relatedModelReflection->getName();
                 }
 
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace     : $decClass->getNamespaceName(),
+                        namespace     : $modelReflection->getNamespaceName(),
                         name          : $method->getName(),
-                        model         : $decClass->getName(),
-                        modelShortName: $decClass->getShortName(),
+                        model         : $modelReflection->getName(),
+                        modelShortName: $modelReflection->getShortName(),
                         types         : [
                             new Type(
                                 name      : $typeName,
@@ -209,6 +241,8 @@ class Generator
                                 }
                             )
                         ],
+                        //model relations are not set by their method nemo,
+                        //so in typescript it should be nullable (not required) and undefinable
                         isRequired    : false,
                         isUndefinable : true
                     )
@@ -217,6 +251,7 @@ class Generator
     }
 
     /**
+     * @description Returns Collection of Return Types (Type)
      * @param ReflectionMethod $method
      * @return Collection<int,Type>
      * @throws ReflectionException
@@ -263,6 +298,11 @@ class Generator
             });
     }
 
+    /**
+     * @description Returns Prop name to be generated
+     * @param ReflectionMethod $method
+     * @return string
+     */
     private function qualifyAttributeName(ReflectionMethod $method): string
     {
         $name = str($method->getName());
