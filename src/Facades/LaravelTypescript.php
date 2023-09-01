@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method \Wovosoft\LaravelTypescript\LaravelTypescript new()
- * @method array generate(string|array $sourceDir, string $outputPath)
- * @method string toTypescript(string|array $sourceDir)
+ * @method array                                         generate(string|array $sourceDir, string $outputPath)
+ * @method string                                        toTypescript(string|array $sourceDir)
  */
 class LaravelTypescript extends Facade
 {

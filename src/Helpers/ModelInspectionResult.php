@@ -10,22 +10,22 @@ use ReflectionMethod;
 class ModelInspectionResult
 {
     /**
-     * @param class-string<Model>|Model $model
-     * @param Collection<int,Column> $columns
+     * @param class-string<Model>|Model        $model
+     * @param Collection<int,Column>           $columns
      * @param Collection<int,ReflectionMethod> $custom_attributes
      * @param Collection<int,ReflectionMethod> $relations
      */
     public function __construct(
         private readonly string|Model $model,
-        private readonly Collection   $columns,
-        private readonly Collection   $custom_attributes,
-        private readonly Collection   $relations
-    )
-    {
+        private readonly Collection $columns,
+        private readonly Collection $custom_attributes,
+        private readonly Collection $relations
+    ) {
     }
 
     /**
      * @description Generates the model interface
+     *
      * @return string
      */
     public function __toString(): string
@@ -72,6 +72,6 @@ class ModelInspectionResult
 
     public function toTypescript(): string
     {
-        return (string)$this->getGenerator();
+        return (string) $this->getGenerator();
     }
 }

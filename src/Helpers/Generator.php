@@ -18,10 +18,10 @@ use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
 use Wovosoft\LaravelTypescript\RelationType;
+use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Definition;
 use Wovosoft\LaravelTypescript\Types\EnumType;
 use Wovosoft\LaravelTypescript\Types\PhpType;
-use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Type;
 
 class Generator
@@ -30,11 +30,12 @@ class Generator
     {
     }
 
-
     /**
      * @description Get all definitions
-     * @return Collection<int,Definition>
+     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,Definition>
      */
     public function getDefinitions(): Collection
     {
@@ -46,8 +47,10 @@ class Generator
 
     /**
      * @description Generates interface
-     * @return string
+     *
      * @throws ReflectionException
+     *
+     * @return string
      */
     public function __toString(): string
     {
@@ -56,6 +59,7 @@ class Generator
 
     /**
      * @description Generates interface
+     *
      * @throws ReflectionException
      */
     public function toTypescript(): string
@@ -63,21 +67,23 @@ class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $definition, string $key) {
-                return "\t\t$key" . ($definition->isUndefinable ? '?' : '') . ": $definition;";
+                return "\t\t$key".($definition->isUndefinable ? '?' : '').": $definition;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface " . ($reflection->getShortName()) . " {" . PHP_EOL)
-            ->append(PHP_EOL . "\t}");
+            ->prepend("\texport interface ".$reflection->getShortName().' {'.PHP_EOL)
+            ->append(PHP_EOL."\t}");
     }
 
     /**
      * @description Returns database column definitions
-     * @return Collection<int,Definition>
+     *
      * @throws ReflectionException
      * @throws Exception
+     *
+     * @return Collection<int,Definition>
      */
     private function getColumnDefinitions(): Collection
     {
@@ -153,7 +159,7 @@ class Generator
                 if ($types->isEmpty()) {
                     $types->add(
                         new Type(
-                            name      : config("laravel-typescript.custom_attributes.fallback_return_type"),
+                            name      : config('laravel-typescript.custom_attributes.fallback_return_type'),
                             isMultiple: false
                         )
                     );
@@ -168,15 +174,17 @@ class Generator
                         types         : $types,
                         isRequired    : $this->isRequiredReturnType($method),
                         isUndefinable : true
-                    )
+                    ),
                 ];
             });
     }
 
     /**
      * @description Returns definitions of relations
-     * @return Collection<int,Definition>
+     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,Definition>
      */
     private function getRelationDefinitions(): Collection
     {
@@ -184,7 +192,7 @@ class Generator
             $model = $this->result->getModel();
         } else {
             $modelClass = $this->result->getModel();
-            $model = new $modelClass;
+            $model = new $modelClass();
         }
 
         $modelReflection = new ReflectionClass($model);
@@ -239,22 +247,25 @@ class Generator
 
                                     default               => RelationType::One
                                 }
-                            )
+                            ),
                         ],
                         //model relations are not set by their method nemo,
                         //so in typescript it should be nullable (not required) and undefinable
                         isRequired    : false,
                         isUndefinable : true
-                    )
+                    ),
                 ];
             });
     }
 
     /**
      * @description Returns Collection of Return Types (Type)
+     *
      * @param ReflectionMethod $method
-     * @return Collection<int,Type>
+     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,Type>
      */
     private function getReturnTypes(ReflectionMethod $method): Collection
     {
@@ -271,7 +282,7 @@ class Generator
         }
 
         return collect($types)
-            ->map(function (ReflectionNamedType $type) use ($method) {
+            ->map(function (ReflectionNamedType $type) {
                 if ($type->isBuiltin()) {
                     /**
                      * @todo In php it is not possible to define array's member type
@@ -286,7 +297,7 @@ class Generator
                     //    }
                     //}
 
-                    $name = PhpType::toTypescript($type->getName() ?: config("laravel-typescript.custom_attributes.fallback_return_type"));
+                    $name = PhpType::toTypescript($type->getName() ?: config('laravel-typescript.custom_attributes.fallback_return_type'));
                 } else {
                     $name = $type->getName() ?: 'any';
                 }
@@ -300,7 +311,9 @@ class Generator
 
     /**
      * @description Returns Prop name to be generated
+     *
      * @param ReflectionMethod $method
+     *
      * @return string
      */
     private function qualifyAttributeName(ReflectionMethod $method): string
@@ -311,12 +324,12 @@ class Generator
             return $name->snake()->value();
         }
 
-        return $name->after("get")->before("Attribute")->snake()->value();
+        return $name->after('get')->before('Attribute')->snake()->value();
     }
-
 
     /**
      * @description Determines if a props value is required or nullable
+     *
      * @throws ReflectionException
      */
     private function isRequiredReturnType(ReflectionMethod $method): bool
@@ -335,7 +348,6 @@ class Generator
          * So, it is safe to call it to have the instance of Attribute.
          */
         if (Attributes::isNewStyled($method)) {
-
             /*
              * NOTE: When $model->newStyleAttribute or $model->new_style_attribute
              * is called, it is being resolved directly by the model itself.
@@ -349,14 +361,3 @@ class Generator
         return !$method->getReturnType()?->allowsNull();
     }
 }
-
-
-
-
-
-
-
-
-
-
-

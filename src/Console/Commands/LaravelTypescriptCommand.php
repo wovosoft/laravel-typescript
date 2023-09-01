@@ -29,10 +29,10 @@ class LaravelTypescriptCommand extends Command
     public function handle(): void
     {
         LaravelTypescript::generate(
-            sourceDir : config("laravel-typescript.source_dir"),
-            outputPath: config("laravel-typescript.output_path"),
+            sourceDir : config('laravel-typescript.source_dir'),
+            outputPath: config('laravel-typescript.output_path'),
         );
 
-        $this->info("Successfully Generated Typescript Model Interfaces");
+        $this->info('Successfully Generated Typescript Model Interfaces');
     }
 }
