@@ -33,9 +33,9 @@ class Generator
     /**
      * @description Get all definitions
      *
-     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
+     * @return Collection<int,Definition>
      */
     public function getDefinitions(): Collection
     {
@@ -48,9 +48,9 @@ class Generator
     /**
      * @description Generates interface
      *
-     * @return string
      * @throws ReflectionException
      *
+     * @return string
      */
     public function __toString(): string
     {
@@ -67,23 +67,23 @@ class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $definition, string $key) {
-                return "\t\t$key" . ($definition->isUndefinable ? '?' : '') . ": $definition;";
+                return "\t\t$key".($definition->isUndefinable ? '?' : '').": $definition;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
-            ->append(PHP_EOL . "\t}");
+            ->prepend("\texport interface ".$reflection->getShortName().' {'.PHP_EOL)
+            ->append(PHP_EOL."\t}");
     }
 
     /**
      * @description Returns database column definitions
      *
-     * @return Collection<int,Definition>
      * @throws Exception
-     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,Definition>
      */
     private function getColumnDefinitions(): Collection
     {
@@ -182,9 +182,9 @@ class Generator
     /**
      * @description Returns definitions of relations
      *
-     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
+     * @return Collection<int,Definition>
      */
     private function getRelationDefinitions(): Collection
     {
@@ -263,9 +263,9 @@ class Generator
      *
      * @param ReflectionMethod $method
      *
-     * @return Collection<int,Type>
      * @throws ReflectionException
      *
+     * @return Collection<int,Type>
      */
     private function getAttributeReturnTypes(ReflectionMethod $method): Collection
     {
@@ -303,7 +303,7 @@ class Generator
                 } elseif (ModelInspector::isModelClassOrObject($type->getName())) {
                     $name = $this->getQualifiedNamespace($type->getName());
                 } else {
-                    $name = "any";
+                    $name = 'any';
                 }
 
                 return new Type(
@@ -367,6 +367,6 @@ class Generator
 
     private function getQualifiedNamespace(string $name): string
     {
-        return str($name)->replace("\\", ".")->value();
+        return str($name)->replace('\\', '.')->value();
     }
 }
