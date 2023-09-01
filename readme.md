@@ -7,6 +7,13 @@
 
 Transforms Laravel Models to Typescript Interfaces/Types
 
+## Precautions
+
+This packages instantiates Models to retrieve it's casts,
+attributes, relations in some cases. So, if your models have
+some sensitive actions inside __constructor method, please
+be aware of using this package.
+
 ## Installation
 
 Via Composer
@@ -84,7 +91,6 @@ For new Model Attributes, return type of the Closure function should be defined,
 otherwise, it will generate value of
 `config('laravel-typescript.custom_attributes.fallback_return_type')` type for the related
 property.
-
 
 ```php
 use \Illuminate\Database\Eloquent\Model;
