@@ -4,15 +4,15 @@ namespace Wovosoft\LaravelTypescript\Types;
 
 enum PhpType: string
 {
-    case INT     = 'int';
-    case FLOAT   = 'float';
-    case DOUBLE  = 'double';
-    case ARRAY   = 'array';
-    case OBJECT  = 'object';
-    case STRING  = 'string';
-    case BOOL    = 'bool';
+    case INT = 'int';
+    case FLOAT = 'float';
+    case DOUBLE = 'double';
+    case ARRAY = 'array';
+    case OBJECT = 'object';
+    case STRING = 'string';
+    case BOOL = 'bool';
     case BOOLEAN = 'boolean';
-    case NULL    = 'null';
+    case NULL = 'null';
 
     public static function toTypescript(string|PhpType|null $type = null): string
     {

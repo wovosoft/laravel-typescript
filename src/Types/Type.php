@@ -10,15 +10,14 @@ use Wovosoft\LaravelTypescript\RelationType;
 class Type
 {
     public function __construct(
-        private readonly string            $name,
+        private readonly string $name,
         private readonly bool|RelationType $isMultiple
-    )
-    {
+    ) {
     }
 
     private function getQualifiedName(): string
     {
-        return str($this->name)->replace("\\", ".")->value();
+        return str($this->name)->replace('\\', '.')->value();
     }
 
     public function getName(): string
@@ -36,17 +35,17 @@ class Type
         $name = $this->getQualifiedName();
 
         /**
-         * When the type is of Relation, it can be of one, multiple or one_many in number
+         * When the type is of Relation, it can be of one, multiple or one_many in number.
          */
         if ($this->isMultiple instanceof RelationType) {
             return match ($this->getIsMultiple()) {
-                RelationType::Many      => $name . "[]",
-                RelationType::OneOrMany => implode(" | ", [$name, $name . "[]"]),
+                RelationType::Many      => $name.'[]',
+                RelationType::OneOrMany => implode(' | ', [$name, $name.'[]']),
                 //RelationType::One       => $name,
                 default                 => $name
             };
         }
 
-        return $name . ($this->getIsMultiple() ? '[]' : '');
+        return $name.($this->getIsMultiple() ? '[]' : '');
     }
 }

@@ -23,7 +23,9 @@ class Attributes
      *
      *              and if the method's return type is Attribute then the method's name
      *              is prop name.
+     *
      * @param ReflectionMethod $reflectionMethod
+     *
      * @return bool
      */
     public static function isAttribute(ReflectionMethod $reflectionMethod): bool
@@ -52,7 +54,7 @@ class Attributes
         /*
          * If it returns Attribute::class it is custom attribute
          */
-        return ($reflectionMethod->getReturnType()?->getName() === Attribute::class);
+        return $reflectionMethod->getReturnType()?->getName() === Attribute::class;
     }
 
     /*
@@ -67,7 +69,9 @@ class Attributes
 
     /**
      * @description Determines if the attribute is of new style or old style
+     *
      * @param ReflectionMethod $method
+     *
      * @return bool
      */
     public static function isNewStyled(ReflectionMethod $method): bool
@@ -83,8 +87,8 @@ class Attributes
          * old style attributes are defined like, 'get{PropName}Attribute()'
          */
         if (
-            $name->startsWith("get")
-            && $name->endsWith("Attribute")
+            $name->startsWith('get')
+            && $name->endsWith('Attribute')
             && $name->value() !== 'getAttribute'
         ) {
             return false;
@@ -92,7 +96,8 @@ class Attributes
 
         /**
          * New style attributes doesn't return multiple values,
-         * it returns only one, and it is of type
+         * it returns only one, and it is of type.
+         *
          * @link \Illuminate\Database\Eloquent\Casts\Attribute::class
          */
         if ($method->getReturnType() instanceof ReflectionUnionType) {
@@ -109,15 +114,18 @@ class Attributes
     /**
      * @description Get Reflection of new style attributes 'get' method
      *              This method should be called for new style attributes only.
+     *
      * @note In most cases, it is safe to retrieve types in this way,
      *      because, calling new styled attribute doesn't make any database/php operations,
      *      it just returns an instance of Attribute::class
-     *
      * @note It is safe to check if the method defines new style attribute before calling this function
+     *
      * @param ReflectionMethod $method
-     * @return ReflectionFunction
+     *
      * @throws ReflectionException
      * @throws Exception
+     *
+     * @return ReflectionFunction
      */
     public static function getReflectionOfNewStyleAttribute(ReflectionMethod $method): ReflectionFunction
     {

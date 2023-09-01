@@ -3,8 +3,8 @@
 namespace Wovosoft\LaravelTypescript\Types;
 
 use Doctrine\DBAL\Exception;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\DBAL\Types\Types;
 
 class ColumnType
 {
@@ -15,7 +15,7 @@ class ColumnType
     {
         return match (Type::getTypeRegistry()->lookupName($type)) {
             Types::ARRAY,
-            Types::SIMPLE_ARRAY   => "any[]",
+            Types::SIMPLE_ARRAY   => 'any[]',
 
             Types::ASCII_STRING,
             Types::DATE_MUTABLE,
@@ -29,17 +29,17 @@ class ColumnType
             Types::STRING,
             Types::TEXT,
             Types::TIME_MUTABLE,
-            Types::TIME_IMMUTABLE => "string",
+            Types::TIME_IMMUTABLE => 'string',
 
             Types::BIGINT,
             Types::DECIMAL,
             Types::FLOAT,
             Types::INTEGER,
-            Types::SMALLINT       => "number",
+            Types::SMALLINT       => 'number',
 
             Types::BINARY,
-            Types::BLOB           => "unknown",
-            Types::BOOLEAN        => "boolean",
+            Types::BLOB           => 'unknown',
+            Types::BOOLEAN        => 'boolean',
 
             /*
              * JSON/OBJECT/ARRAY should be checked in more detail.
@@ -47,8 +47,8 @@ class ColumnType
              * interface in upcoming versions.
              */
             Types::JSON,
-            Types::OBJECT         => "{[key:string]:any}",
-            default               => "any"
+            Types::OBJECT         => '{[key:string]:any}',
+            default               => 'any'
         };
     }
 }

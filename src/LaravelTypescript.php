@@ -18,16 +18,17 @@ class LaravelTypescript
 
     /**
      * @param string|array $sourceDir
-     * @param string $outputPath
-     * @return array<string,string> {path,contents}
+     * @param string       $outputPath
+     *
      * @throws Exception
      * @throws ReflectionException
+     *
+     * @return array<string,string> {path,contents}
      */
     public function generate(
         string|array $sourceDir,
-        string       $outputPath,
-    ): array
-    {
+        string $outputPath,
+    ): array {
         File::ensureDirectoryExists(dirname($outputPath));
 
         $contents = $this->toTypescript($sourceDir);
@@ -36,42 +37,45 @@ class LaravelTypescript
 
         return [
             $outputPath,
-            $contents
+            $contents,
         ];
     }
 
     /**
      * @param string|array $sourceDir
-     * @return string
+     *
      * @throws Exception
      * @throws ReflectionException
+     *
+     * @return string
      */
     public function toTypescript(string|array $sourceDir): string
     {
         return ModelInspector::getModelsIn($sourceDir)
-            ->map(fn(string $modelClass) => [
-                "namespace" => (new ReflectionClass($modelClass))->getNamespaceName(),
-                "model"     => $modelClass
+            ->map(fn (string $modelClass) => [
+                'namespace' => (new ReflectionClass($modelClass))->getNamespaceName(),
+                'model'     => $modelClass,
             ])
-            ->groupBy("namespace")
-            ->mapWithKeys(fn(Collection $models, string $namespace) => [
-                $namespace => $models->pluck('model')
+            ->groupBy('namespace')
+            ->mapWithKeys(fn (Collection $models, string $namespace) => [
+                $namespace => $models->pluck('model'),
             ])
             ->map(function (Collection $modelClasses, string $namespace) {
-                $namespace = str($namespace)->replace("\\", ".")->value();
+                $namespace = str($namespace)->replace('\\', '.')->value();
 
-                return "declare namespace $namespace {" . PHP_EOL
-                    . $modelClasses
+                return "declare namespace $namespace {".PHP_EOL
+                    .$modelClasses
                         ->map(
-                            fn(string $modelClass) => (string)ModelInspector::new($modelClass)
+                            fn (string $modelClass) => (string) ModelInspector::new($modelClass)
                                 ->getInspectionResult()
                                 ->getGenerator()
                         )
                         ->implode(
-                            fn(string $content) => $content, PHP_EOL . PHP_EOL
+                            fn (string $content) => $content,
+                            PHP_EOL.PHP_EOL
                         )
-                    . PHP_EOL . "}" . PHP_EOL;
+                    .PHP_EOL.'}'.PHP_EOL;
             })
-            ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL);
+            ->implode(fn (string $content) => $content, PHP_EOL.PHP_EOL);
     }
 }
