@@ -20,13 +20,19 @@ class ModelInspector
 
     /**
      * @description Returns the list of model-classes in a directory
-     * @param string $directory
+     * @param string|array $directories
      * @return Collection<int,class-string<Model>>
      * @link https://github.com/composer/class-map-generator
      */
-    public static function getModelsIn(string $directory): Collection
+    public static function getModelsIn(string|array $directories): Collection
     {
-        return collect(array_keys(ClassMapGenerator::createMap($directory)))
+        if (is_string($directories)) {
+            $directories = [$directories];
+        }
+
+        return collect($directories)
+            ->map(fn(string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
+            ->collapse()
             ->filter(fn($class) => is_subclass_of($class, Model::class));
     }
 
@@ -75,18 +81,19 @@ class ModelInspector
      */
     private function getColumns(): Collection
     {
-        $model = $this->parseModel();
+        $model = static::parseModel($this->model);
+
+        $columns = $model
+            ->getConnection()
+            ->getDoctrineConnection()
+            ->createSchemaManager()
+            ->listTableColumns($model->getTable());
 
         /**
          * Model fields name should be exact like column name.
          */
-        return collect(
-            $model
-                ->getConnection()
-                ->getDoctrineConnection()
-                ->createSchemaManager()
-                ->listTableColumns($model->getTable())
-        );
+        return collect($columns)
+            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
     }
 
     /**
@@ -116,17 +123,19 @@ class ModelInspector
     }
 
     /**
+     * @param class-string<Model>|Model $model
+     * @return Model
      * @throws \Exception
      */
-    private function parseModel(): Model
+    public static function parseModel(string|Model $model): Model
     {
-        if (is_string($this->model)) {
-            if (!is_subclass_of($this->model, Model::class)) {
-                throw new \Exception("$this->model is not a valid Model Class");
+        if (is_string($model)) {
+            if (!is_subclass_of($model, Model::class)) {
+                throw new \Exception("$model is not a valid Model Class");
             }
-            return new $this->model();
+            return new $model();
         }
 
-        return $this->model;
+        return $model;
     }
 }

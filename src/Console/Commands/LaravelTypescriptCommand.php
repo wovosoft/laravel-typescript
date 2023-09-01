@@ -3,16 +3,16 @@
 namespace Wovosoft\LaravelTypescript\Commands;
 
 use Illuminate\Console\Command;
-use Wovosoft\LaravelTypescript\LaravelTypescript;
+use Wovosoft\LaravelTypescript\Facades\LaravelTypescript;
 
-class TypescriptModelTransformer extends Command
+class LaravelTypescriptCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'typescript:transform-models';
+    protected $signature = 'laravel-typescript:transform';
 
     /**
      * The console command description.
@@ -28,10 +28,11 @@ class TypescriptModelTransformer extends Command
      */
     public function handle(): void
     {
-        $transformer = new LaravelTypescript(
-            outputPath: config('laravel-typescript.output_path'),
-            sourceDir: config('laravel-typescript.source_dir')
+        LaravelTypescript::generate(
+            sourceDir : config("laravel-typescript.source_dir"),
+            outputPath: config("laravel-typescript.output_path"),
         );
-        $transformer->run();
+
+        $this->info("Successfully Generated Typescript Model Interfaces");
     }
 }

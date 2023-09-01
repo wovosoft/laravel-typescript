@@ -27,8 +27,17 @@ Configure the configurations
 
 ```php
 return [
-    "output_path" => resource_path("js/types/models.d.ts"),
-    "source_dir"  => app_path("Models")
+    'output_path'       => resource_path('js/types/models.d.ts'),
+    'source_dir'        => app_path('Models'),
+    /**
+     * Custom attributes should have return types defined.
+     * But if it is not, then the return type should be this type.
+     * And this value should be php supported return types.
+     * like primitive types or any other classes
+     */
+    "custom_attributes" => [
+        "fallback_return_type" => "string"
+    ]
 ];
 ```
 
@@ -37,7 +46,7 @@ return [
 Run the command given below to generate typescript types.
 
 ```bash
-php artisan typescript:transform-models
+php artisan laravel-typescript:transform
 ```
 
 Generated contents will be written in configured location.
@@ -51,22 +60,31 @@ in that case, please check the source of
 You can just instantiate this class, and generate types for models in some other directories.
 
 ```php
-use \Wovosoft\LaravelTypescript\LaravelTypescript;
+use Wovosoft\LaravelTypescript\Facades\LaravelTypescript;
 
-$transformer=new LaravelTypescript(
-    outputPath: resource_path("js/types/models.d.ts"),
-    sourceDir: app_path("Models")
-);
 
-$transformer->run();
+$dirs = [
+    "models"               => app_path("Models"),
+    "hrmPerson"            => base_path("packages/wovosoft/hrms-person/src/Models"),
+];
+
+foreach ($dirs as $name => $dir) {
+    LaravelTypescript::generate(
+        sourceDir : $dir,
+        outputPath: resource_path("js/types/$name.d.ts")
+    );
+    
+    echo "Generated $name.d.ts";
+}
 ```
 
 ## Note on New Model Attributes
 
 For new Model Attributes, return type of the Closure function should be defined,
-otherwise, it will generate `unknown` type for the related property.
+otherwise, it will generate value of
+`config('laravel-typescript.custom_attributes.fallback_return_type')` type for the related
+property.
 
-But for the old styled attribute, it is not mandatory.
 
 ```php
 use \Illuminate\Database\Eloquent\Model;
@@ -89,14 +107,14 @@ class User extends Model{
 
 Please see the [changelog](changelog.md) for more information on what has changed recently.
 
-
 ## Contributing
 
 Please see [contributing.md](contributing.md) for details and a todolist.
 
 ## Security
 
-If you discover any security related issues, please create issues in [Issues Tracker](https://github.com/wovosoft/laravel-typescript/issues)
+If you discover any security related issues, please create issues
+in [Issues Tracker](https://github.com/wovosoft/laravel-typescript/issues)
 
 ## Credits
 

@@ -3,6 +3,7 @@
 namespace Wovosoft\LaravelTypescript\Helpers;
 
 use Doctrine\DBAL\Schema\Column;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +19,7 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use Wovosoft\LaravelTypescript\RelationType;
 use Wovosoft\LaravelTypescript\Types\Definition;
+use Wovosoft\LaravelTypescript\Types\EnumType;
 use Wovosoft\LaravelTypescript\Types\PhpType;
 use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Type;
@@ -26,6 +28,19 @@ class Generator
 {
     public function __construct(private readonly ModelInspectionResult $result)
     {
+    }
+
+
+    /**
+     * @return Collection<int,Definition>
+     * @throws ReflectionException
+     */
+    public function getDefinitions(): Collection
+    {
+        return $this
+            ->getColumnDefinitions()
+            ->merge($this->getCustomAttributeDefinitions())
+            ->merge($this->getRelationDefinitions());
     }
 
     /**
@@ -40,64 +55,59 @@ class Generator
     /**
      * @throws ReflectionException
      */
-    public function generate()
-    {
-        return $this->getDefinitions()
-            ->map(function (Definition $definition, string $key) {
-                return (string)$definition;
-            });
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    public function getDefinitions()
-    {
-        return $this
-            ->getColumnDefinitions()
-            ->merge($this->getCustomAttributeDefinitions())
-            ->merge($this->getRelationDefinitions());
-    }
-
-    /**
-     * @throws ReflectionException
-     */
     public function toTypescript(): string
     {
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $definition, string $key) {
-                return "\t\t$key " . ($definition->isUndefinable ? '?' : '') . ": $definition;";
+                return "\t\t$key" . ($definition->isUndefinable ? '?' : '') . ": $definition;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
+
         return str($typings)
-            ->prepend("\texport interface " . ($reflection->getShortName()) . "{" . PHP_EOL)
-            ->append(PHP_EOL . "\t}" . PHP_EOL);
+            ->prepend("\texport interface " . ($reflection->getShortName()) . " {" . PHP_EOL)
+            ->append(PHP_EOL . "\t}");
     }
 
     /**
      * @return Collection<int,Definition>
      * @throws ReflectionException
+     * @throws Exception
      */
     private function getColumnDefinitions(): Collection
     {
         $modelReflection = new ReflectionClass($this->result->getModel());
+        $model = ModelInspector::parseModel($this->result->getModel());
 
         return $this->result
             ->getColumns()
-            ->map(function (Column $column) use ($modelReflection) {
+            ->map(function (Column $column, string $key) use ($model, $modelReflection) {
+                if ($model->hasCast($key)) {
+                    if (is_string($model->getCasts()[$key]) && enum_exists($model->getCasts()[$key])) {
+                        $type = new Type(
+                            name      : EnumType::toTypescript($model->getCasts()[$key]),
+                            isMultiple: false
+                        );
+                    } else {
+                        $type = new Type(
+                            name      : PhpType::toTypescript($model->getCasts()[$key]),
+                            isMultiple: false
+                        );
+                    }
+                } else {
+                    $type = new Type(
+                        name      : ColumnType::toTypescript($column->getType()),
+                        isMultiple: false
+                    );
+                }
+
                 return new Definition(
                     namespace     : $modelReflection->getNamespaceName(),
                     name          : $column->getName(),
                     model         : $modelReflection->getName(),
                     modelShortName: $modelReflection->getShortName(),
-                    types         : [
-                        new Type(
-                            name      : ColumnType::toTypescript($column->getType()),
-                            isMultiple: false
-                        )
-                    ],
+                    types         : [$type],
                     isRequired    : $column->getNotnull(),
                     isUndefinable : false
                 );
@@ -112,13 +122,25 @@ class Generator
         return $this->result
             ->getCustomAttributes()
             ->mapWithKeys(function (ReflectionMethod $method) {
+                $decClass = $method->getDeclaringClass();
+                $types = $this->getReturnTypes($method);
+
+                if ($types->isEmpty()) {
+                    $types->add(
+                        new Type(
+                            name      : config("laravel-typescript.custom_attributes.fallback_return_type"),
+                            isMultiple: false
+                        )
+                    );
+                }
+
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace     : $method->getDeclaringClass()->getNamespaceName(),
+                        namespace     : $decClass->getNamespaceName(),
                         name          : $this->qualifyAttributeName($method),
-                        model         : $method->getDeclaringClass()?->getName(),
-                        modelShortName: $method->getDeclaringClass()->getShortName(),
-                        types         : $this->getReturnTypes($method),
+                        model         : $decClass->getName(),
+                        modelShortName: $decClass->getShortName(),
+                        types         : $types,
                         isRequired    : $this->isRequiredReturnType($method),
                         isUndefinable : true
                     )
@@ -129,6 +151,7 @@ class Generator
     /**
      * @description Returns definitions of relations
      * @return Collection<int,Definition>
+     * @throws ReflectionException
      */
     private function getRelationDefinitions(): Collection
     {
@@ -139,21 +162,32 @@ class Generator
             $model = new $modelClass;
         }
 
+        $modelReflection = new ReflectionClass($model);
+
         return $this->result
             ->getRelations()
-            ->mapWithKeys(function (ReflectionMethod $method) use ($model) {
+            ->mapWithKeys(function (ReflectionMethod $method) use ($model, $modelReflection) {
                 /* @var Model $relatedModel */
                 $relatedModel = $model->{$method->getName()}()->getRelated();
+                $decClass = $method->getDeclaringClass();
+
+                $relatedModelReflection = new ReflectionClass($relatedModel);
+
+                if ($relatedModelReflection->getNamespaceName() === $modelReflection->getNamespaceName()) {
+                    $typeName = $relatedModelReflection->getShortName();
+                } else {
+                    $typeName = $relatedModelReflection->getName();
+                }
 
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace     : $method->getDeclaringClass()->getNamespaceName(),
+                        namespace     : $decClass->getNamespaceName(),
                         name          : $method->getName(),
-                        model         : $method->getDeclaringClass()->getName(),
-                        modelShortName: $method->getDeclaringClass()->getShortName(),
+                        model         : $decClass->getName(),
+                        modelShortName: $decClass->getShortName(),
                         types         : [
                             new Type(
-                                name      : get_class($relatedModel),
+                                name      : $typeName,
                                 isMultiple: match ($method->getReturnType()->getName()) {
                                     //HasOne::class,
                                     //HasOneThrough::class,
@@ -217,7 +251,7 @@ class Generator
                     //    }
                     //}
 
-                    $name = PhpType::toTypescript($type->getName() ?: null);
+                    $name = PhpType::toTypescript($type->getName() ?: config("laravel-typescript.custom_attributes.fallback_return_type"));
                 } else {
                     $name = $type->getName() ?: 'any';
                 }

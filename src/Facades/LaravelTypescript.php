@@ -4,7 +4,12 @@ namespace Wovosoft\LaravelTypescript\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
-class TypescriptTransformer extends Facade
+/**
+ * @method \Wovosoft\LaravelTypescript\LaravelTypescript new()
+ * @method array generate(string|array $sourceDir, string $outputPath)
+ * @method string toTypescript(string|array $sourceDir)
+ */
+class LaravelTypescript extends Facade
 {
     /**
      * Get the registered name of the component.

@@ -18,6 +18,16 @@ class Type
         return str($this->name)->replace("\\", ".")->value();
     }
 
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getIsMultiple(): bool|RelationType
+    {
+        return $this->isMultiple;
+    }
+
     public function __toString(): string
     {
         $name = $this->getQualifiedName();

@@ -5,35 +5,52 @@ namespace Wovosoft\LaravelTypescript;
 use Doctrine\DBAL\Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use ReflectionClass;
+use ReflectionException;
 use Wovosoft\LaravelTypescript\Helpers\ModelInspector;
 
 class LaravelTypescript
 {
+    public static function new(): static
+    {
+        return new static();
+    }
+
     /**
-     * @param string|null $sourceDir
-     * @param string|null $outputPath
-     * @return void
+     * @param string|array $sourceDir
+     * @param string $outputPath
+     * @return array<string,string> {path,contents}
      * @throws Exception
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function generate(
-        ?string $sourceDir = null,
-        ?string $outputPath = null,
-    )
+        string|array $sourceDir,
+        string       $outputPath,
+    ): array
     {
-        if (!$outputPath) {
-            $outputPath = resource_path('js/types/models2.d.ts');
-        }
-
-        if (!$sourceDir) {
-            $sourceDir = app_path('Models');
-        }
-
         File::ensureDirectoryExists(dirname($outputPath));
 
-        $contents = ModelInspector::getModelsIn($sourceDir)
+        $contents = $this->toTypescript($sourceDir);
+
+        File::put(path: $outputPath, contents: $contents);
+
+        return [
+            $outputPath,
+            $contents
+        ];
+    }
+
+    /**
+     * @param string|array $sourceDir
+     * @return string
+     * @throws Exception
+     * @throws ReflectionException
+     */
+    public function toTypescript(string|array $sourceDir): string
+    {
+        return ModelInspector::getModelsIn($sourceDir)
             ->map(fn(string $modelClass) => [
-                "namespace" => (new \ReflectionClass($modelClass))->getNamespaceName(),
+                "namespace" => (new ReflectionClass($modelClass))->getNamespaceName(),
                 "model"     => $modelClass
             ])
             ->groupBy("namespace")
@@ -54,10 +71,8 @@ class LaravelTypescript
                         ->implode(
                             fn(string $content) => $content, PHP_EOL . PHP_EOL
                         )
-                    . "}" . PHP_EOL;
+                    . PHP_EOL . "}" . PHP_EOL;
             })
             ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL);
-
-        File::put(path: $outputPath, contents: $contents);
     }
 }

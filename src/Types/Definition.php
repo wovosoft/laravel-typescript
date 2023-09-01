@@ -29,7 +29,8 @@ class Definition
 
     public function __toString(): string
     {
-        return (collect($this->types)->implode(fn(Type $type) => (string)$type, " | "))
+        return
+            collect($this->types)->implode(fn(Type $type) => (string)$type, " | ")
             . (!$this->isRequired ? ' | null' : '');
     }
 }
