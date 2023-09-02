@@ -18,7 +18,7 @@ trait HasTypeGenerators
     public static function string(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "string",
+            name      : 'string',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -27,77 +27,87 @@ trait HasTypeGenerators
     public static function mutableDate(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "date mutable"
+            isMultiple: $isMultiple,
+            comment: 'date mutable'
         );
     }
 
     public static function immutableDate(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "date immutable"
+            isMultiple: $isMultiple,
+            comment: 'date immutable'
         );
     }
 
     public static function mutableDatetimeZ(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "datetimez mutable"
+            isMultiple: $isMultiple,
+            comment: 'datetimez mutable'
         );
     }
 
     public static function immutableDatetimeZ(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "datetimez immutable"
+            isMultiple: $isMultiple,
+            comment: 'datetimez immutable'
         );
     }
 
     public static function mutableDatetime(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "datetime mutable"
+            isMultiple: $isMultiple,
+            comment: 'datetime mutable'
         );
     }
 
     public static function immutableTime(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "time immutable"
+            isMultiple: $isMultiple,
+            comment: 'time immutable'
         );
     }
 
     public static function mutableTime(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "time mutable"
+            isMultiple: $isMultiple,
+            comment: 'time mutable'
         );
     }
 
     public static function immutableDatetime(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "datetime immutable"
+            isMultiple: $isMultiple,
+            comment: 'datetime immutable'
         );
     }
 
     public static function mutableTimestamp(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "timestamp mutable"
+            isMultiple: $isMultiple,
+            comment: 'timestamp mutable'
         );
     }
 
     public static function immutableTimestamp(bool $isMultiple = false): static
     {
         return static::string(
-            isMultiple: $isMultiple, comment: "timestamp immutable"
+            isMultiple: $isMultiple,
+            comment: 'timestamp immutable'
         );
     }
 
     public static function number(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "number",
+            name      : 'number',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -106,7 +116,7 @@ trait HasTypeGenerators
     public static function boolean(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "boolean",
+            name      : 'boolean',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -115,7 +125,7 @@ trait HasTypeGenerators
     public static function object(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "{[key:string]:any}",
+            name      : '{[key:string]:any}',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -124,7 +134,7 @@ trait HasTypeGenerators
     public static function any(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "any",
+            name      : 'any',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -133,7 +143,7 @@ trait HasTypeGenerators
     public static function array(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "{[key:string]:any}[]|any[]",
+            name      : '{[key:string]:any}[]|any[]',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -142,7 +152,7 @@ trait HasTypeGenerators
     public static function json(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "{[key:string]:any}",
+            name      : '{[key:string]:any}',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -151,7 +161,7 @@ trait HasTypeGenerators
     public static function unknown(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "unknown",
+            name      : 'unknown',
             isMultiple: $isMultiple,
             comment   : $comment
         );
@@ -160,10 +170,9 @@ trait HasTypeGenerators
     public static function never(bool $isMultiple = false, ?string $comment = null): static
     {
         return new static(
-            name      : "never",
+            name      : 'never',
             isMultiple: $isMultiple,
             comment   : $comment
         );
     }
-
 }

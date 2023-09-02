@@ -18,8 +18,7 @@ class ModelInspector
      */
     public function __construct(
         private string|Model|null $model = null
-    )
-    {
+    ) {
     }
 
     /**
@@ -38,19 +37,22 @@ class ModelInspector
         }
 
         return collect($directories)
-            ->map(fn(string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
+            ->map(fn (string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
             ->collapse()
-            ->filter(fn($class) => static::isOfModelType($class));
+            ->filter(fn ($class) => static::isOfModelType($class));
     }
 
     /**
      * @description Checks if the provided class/object is of type Model
+     *
      * @note the parameter $model's type is set to be string|Model, because
      *       we need to check any kind of object/class to be checked if it
      *       is of type Model or not. If string|Model is used, strings of any
      *      type will be passed, but objects other than Model won't be passed
      *      for testing whether it is of type Model or not.
+     *
      * @param mixed $model
+     *
      * @return bool
      */
     public static function isOfModelType(mixed $model): bool
@@ -94,11 +96,11 @@ class ModelInspector
      * @description Returns model inspection result which contains
      *              list of database columns, custom attributes and relations.
      *
-     * @return ModelInspectionResult
      * @throws ReflectionException
      * @throws \Exception
-     *
      * @throws Exception
+     *
+     * @return ModelInspectionResult
      */
     public function getInspectionResult(): ModelInspectionResult
     {
@@ -115,10 +117,10 @@ class ModelInspector
     /**
      * @description Returns Collection of Database columns
      *
-     * @return Collection<int,Column>
      * @throws \Exception
-     *
      * @throws Exception
+     *
+     * @return Collection<int,Column>
      */
     private function getColumns(): Collection
     {
@@ -138,46 +140,46 @@ class ModelInspector
          * So, those fields are being forgotten (omitted) from the collection.
          */
         return collect($columns)
-            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
+            ->when(!empty($model->getHidden()), fn (Collection $cols) => $cols->forget($model->getHidden()));
     }
 
     /**
      * @description Returns methods which are used to define Custom Attributes
      *
-     * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
      *
+     * @return Collection<int,ReflectionMethod>
      */
     private function getCustomAttributes(): Collection
     {
         return collect((new ReflectionClass($this->model))->getMethods())
             ->filter(
-                fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
+                fn (ReflectionMethod $rf) => Attributes::isAttribute($rf)
             );
     }
 
     /**
      * @description Returns methods of a given model, which are used to define relations
      *
-     * @return Collection<int,ReflectionMethod>
      * @throws \Exception
-     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,ReflectionMethod>
      */
     private function getRelations(): Collection
     {
         $this->isModelSet();
 
         return collect((new ReflectionClass($this->model))->getMethods())
-            ->filter(fn(ReflectionMethod $rf) => Attributes::isRelation($rf));
+            ->filter(fn (ReflectionMethod $rf) => Attributes::isRelation($rf));
     }
 
     /**
      * @param class-string<Model>|Model $model
      *
-     * @return Model
      * @throws \Exception
      *
+     * @return Model
      */
     public static function parseModel(string|Model $model): Model
     {
@@ -206,6 +208,6 @@ class ModelInspector
 
     public static function getQualifiedNamespace(string $name): string
     {
-        return str($name)->replace("\\", ".")->value();
+        return str($name)->replace('\\', '.')->value();
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-use Wovosoft\LaravelTypescript\Types\Type;
-use Carbon\CarbonImmutable;
 use Carbon\Carbon as CarbonMutable;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
+use Wovosoft\LaravelTypescript\Types\Type;
 
 return [
     'output_path'       => resource_path('js/types/models.d.ts'),
@@ -20,12 +20,12 @@ return [
          * Return type resolver for the new style attribute's accessor method.
          * eg. prlDate():Attribute => Attribute::get(fn():return_type=>return_value)
          */
-        "accessor_resolvers"   => fn(string $type) => match ($type) {
+        'accessor_resolvers'   => fn (string $type) => match ($type) {
             CarbonImmutable::class => Type::immutableDatetime(),
             Carbon::class,
             CarbonMutable::class   => Type::mutableDatetime(),
             default                => Type::any()
-        }
+        },
     ],
 
 ];

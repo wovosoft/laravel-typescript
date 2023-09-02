@@ -16,7 +16,7 @@ class EnumType
     {
         if (enum_exists($enum)) {
             return Type::new(
-                name: collect($enum::cases())->implode(fn($option) => "\"$option->value\"", ' | ')
+                name: collect($enum::cases())->implode(fn ($option) => "\"$option->value\"", ' | ')
             );
         }
 
