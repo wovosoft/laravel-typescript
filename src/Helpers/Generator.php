@@ -26,7 +26,6 @@ use Wovosoft\LaravelTypescript\Types\PhpType;
 use Wovosoft\LaravelTypescript\Types\Type;
 
 /**
- *
  * @todo This can be used for date strings in future
  *      https://blog.logrocket.com/handling-date-strings-typescript/
  */
@@ -39,9 +38,9 @@ class Generator
     /**
      * @description Get all definitions
      *
-     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
+     * @return Collection<int,Definition>
      */
     public function getDefinitions(): Collection
     {
@@ -54,9 +53,9 @@ class Generator
     /**
      * @description Generates interface
      *
-     * @return string
      * @throws ReflectionException
      *
+     * @return string
      */
     public function __toString(): string
     {
@@ -73,23 +72,23 @@ class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $def, string $key) {
-                return "\t\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
+                return "\t\t$key".($def->isUndefinable ? '?' : '').": $def;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
-            ->append(PHP_EOL . "\t}");
+            ->prepend("\texport interface ".$reflection->getShortName().' {'.PHP_EOL)
+            ->append(PHP_EOL."\t}");
     }
 
     /**
      * @description Returns database column definitions
      *
-     * @return Collection<int,Definition>
      * @throws Exception
-     *
      * @throws ReflectionException
+     *
+     * @return Collection<int,Definition>
      */
     private function getColumnDefinitions(): Collection
     {
@@ -171,9 +170,9 @@ class Generator
     /**
      * @description Returns definitions of relations
      *
-     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
+     * @return Collection<int,Definition>
      */
     private function getRelationDefinitions(): Collection
     {
@@ -252,9 +251,9 @@ class Generator
      *
      * @param ReflectionMethod $method
      *
-     * @return Collection<int,Type>
      * @throws ReflectionException
      *
+     * @return Collection<int,Type>
      */
     private function getAttributeReturnTypes(ReflectionMethod $method): Collection
     {
@@ -297,7 +296,7 @@ class Generator
                     return Type::model(name: $type->getName());
                 }
 
-                $resolver = config("laravel-typescript.custom_attributes.accessor_resolvers");
+                $resolver = config('laravel-typescript.custom_attributes.accessor_resolvers');
                 if (is_callable($resolver)) {
                     return $resolver($type->getName());
                 }
@@ -357,6 +356,4 @@ class Generator
 
         return !$method->getReturnType()?->allowsNull();
     }
-
-
 }
