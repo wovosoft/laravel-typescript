@@ -2,7 +2,6 @@
 
 namespace Wovosoft\LaravelTypescript\Types;
 
-use Wovosoft\LaravelTypescript\RelationType;
 use Wovosoft\LaravelTypescript\Traits\HasTypeGenerators;
 
 /**
@@ -13,10 +12,11 @@ class Type
     use HasTypeGenerators;
 
     public function __construct(
-        private readonly string $name,
+        private readonly string            $name,
         private readonly bool|RelationType $isMultiple,
-        private readonly ?string $comment = null
-    ) {
+        private readonly ?string           $comment = null
+    )
+    {
     }
 
     private function getQualifiedName(): string
@@ -43,14 +43,14 @@ class Type
          */
         if ($this->isMultiple instanceof RelationType) {
             return match ($this->getIsMultiple()) {
-                RelationType::Many      => $name.'[]',
-                RelationType::OneOrMany => implode(' | ', [$name, $name.'[]']),
-                //RelationType::One       => $name,
-                default                 => $name
-            }.($this->comment ? " /** $this->comment **/" : '');
+                    RelationType::Many      => $name . '[]',
+                    RelationType::OneOrMany => implode(' | ', [$name, $name . '[]']),
+                    //RelationType::One       => $name,
+                    default                 => $name
+                } . ($this->comment ? " /** $this->comment **/" : '');
         }
 
-        return $name.($this->getIsMultiple() ? '[]' : '').($this->comment ? " /** $this->comment **/" : '');
+        return $name . ($this->getIsMultiple() ? '[]' : '') . ($this->comment ? " /** $this->comment **/" : '');
     }
 
     public static function new(string $name, bool $isMultiple = false, ?string $comment = null): static

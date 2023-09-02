@@ -5,24 +5,17 @@ namespace Wovosoft\LaravelTypescript\Helpers;
 use Doctrine\DBAL\Schema\Column;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
-use Wovosoft\LaravelTypescript\RelationType;
 use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Definition;
 use Wovosoft\LaravelTypescript\Types\EnumType;
 use Wovosoft\LaravelTypescript\Types\LaravelCastType;
 use Wovosoft\LaravelTypescript\Types\PhpType;
+use Wovosoft\LaravelTypescript\Types\RelationType;
 use Wovosoft\LaravelTypescript\Types\Type;
 
 /**
@@ -38,9 +31,9 @@ class Generator
     /**
      * @description Get all definitions
      *
+     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
-     * @return Collection<int,Definition>
      */
     public function getDefinitions(): Collection
     {
@@ -53,9 +46,9 @@ class Generator
     /**
      * @description Generates interface
      *
+     * @return string
      * @throws ReflectionException
      *
-     * @return string
      */
     public function __toString(): string
     {
@@ -72,23 +65,23 @@ class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $def, string $key) {
-                return "\t\t$key".($def->isUndefinable ? '?' : '').": $def;";
+                return "\t\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface ".$reflection->getShortName().' {'.PHP_EOL)
-            ->append(PHP_EOL."\t}");
+            ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
+            ->append(PHP_EOL . "\t}");
     }
 
     /**
      * @description Returns database column definitions
      *
-     * @throws Exception
+     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
-     * @return Collection<int,Definition>
+     * @throws Exception
      */
     private function getColumnDefinitions(): Collection
     {
@@ -170,9 +163,9 @@ class Generator
     /**
      * @description Returns definitions of relations
      *
+     * @return Collection<int,Definition>
      * @throws ReflectionException
      *
-     * @return Collection<int,Definition>
      */
     private function getRelationDefinitions(): Collection
     {
@@ -207,6 +200,7 @@ class Generator
                     $typeName = $relatedModelReflection->getName();
                 }
 
+                $relationName = $method->getReturnType()->getName();
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
                         namespace     : $modelReflection->getNamespaceName(),
@@ -216,25 +210,7 @@ class Generator
                         types         : [
                             new Type(
                                 name      : $typeName,
-                                isMultiple: match ($method->getReturnType()->getName()) {
-                                    //HasOne::class,
-                                    //HasOneThrough::class,
-                                    //BelongsTo::class,
-                                    //MorphOne::class,
-                                    //MorphTo::class,
-                                    //MorphPivot::class     => RelationType::One,
-
-                                    HasManyThrough::class,
-                                    HasMany::class,
-                                    BelongsToMany::class,
-                                    MorphMany::class,
-                                    MorphToMany::class    => RelationType::Many,
-
-                                    HasOneOrMany::class,
-                                    MorphOneOrMany::class => RelationType::OneOrMany,
-
-                                    default               => RelationType::One
-                                }
+                                isMultiple: RelationType::getReturnCountType($relationName)
                             ),
                         ],
                         //model relations are not set by their method nemo,
@@ -251,9 +227,9 @@ class Generator
      *
      * @param ReflectionMethod $method
      *
+     * @return Collection<int,Type>
      * @throws ReflectionException
      *
-     * @return Collection<int,Type>
      */
     private function getAttributeReturnTypes(ReflectionMethod $method): Collection
     {

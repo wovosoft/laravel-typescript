@@ -1,0 +1,41 @@
+<?php
+
+namespace Wovosoft\LaravelTypescript\Types;
+
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+
+enum RelationType
+{
+    case One;
+    case Many;
+    case OneOrMany;
+
+    public static function getReturnCountType(string $relationClass): RelationType
+    {
+        return match ($relationClass) {
+            //HasOne::class,
+            //HasOneThrough::class,
+            //BelongsTo::class,
+            //MorphOne::class,
+            //MorphTo::class,
+            //MorphPivot::class     => RelationType::One,
+
+            HasManyThrough::class,
+            HasMany::class,
+            BelongsToMany::class,
+            MorphMany::class,
+            MorphToMany::class    => RelationType::Many,
+
+            HasOneOrMany::class,
+            MorphOneOrMany::class => RelationType::OneOrMany,
+
+            default               => RelationType::One
+        };
+    }
+}
