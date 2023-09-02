@@ -40,10 +40,20 @@ class ModelInspector
         return collect($directories)
             ->map(fn(string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
             ->collapse()
-            ->filter(fn($class) => static::isModelClassOrObject($class));
+            ->filter(fn($class) => static::isOfModelType($class));
     }
 
-    public static function isModelClassOrObject(string|Model $model): bool
+    /**
+     * @description Checks if the provided class/object is of type Model
+     * @note the parameter $model's type is set to be string|Model, because
+     *       we need to check any kind of object/class to be checked if it
+     *       is of type Model or not. If string|Model is used, strings of any
+     *      type will be passed, but objects other than Model won't be passed
+     *      for testing whether it is of type Model or not.
+     * @param mixed $model
+     * @return bool
+     */
+    public static function isOfModelType(mixed $model): bool
     {
         if (is_string($model) && class_exists($model)) {
             return is_subclass_of($model, Model::class);
@@ -192,5 +202,10 @@ class ModelInspector
         }
 
         return true;
+    }
+
+    public static function getQualifiedNamespace(string $name): string
+    {
+        return str($name)->replace("\\", ".")->value();
     }
 }

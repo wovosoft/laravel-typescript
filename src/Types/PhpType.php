@@ -4,17 +4,17 @@ namespace Wovosoft\LaravelTypescript\Types;
 
 enum PhpType: string
 {
-    case INT = 'int';
-    case FLOAT = 'float';
-    case DOUBLE = 'double';
-    case ARRAY = 'array';
-    case OBJECT = 'object';
-    case STRING = 'string';
-    case BOOL = 'bool';
+    case INT     = 'int';
+    case FLOAT   = 'float';
+    case DOUBLE  = 'double';
+    case ARRAY   = 'array';
+    case OBJECT  = 'object';
+    case STRING  = 'string';
+    case BOOL    = 'bool';
     case BOOLEAN = 'boolean';
-    case NULL = 'null';
+    case NULL    = 'null';
 
-    public static function toTypescript(string|PhpType|null $type = null): string
+    public static function toType(string|PhpType|null $type = null): Type
     {
         if (is_string($type)) {
             $type = self::tryFrom($type);
@@ -23,21 +23,21 @@ enum PhpType: string
         return match ($type) {
             self::INT,
             self::FLOAT,
-            self::DOUBLE              => 'number',
+            self::DOUBLE              => Type::number(),
 
             /*
              * @todo : docblock should be checked to have exact array of type
              */
-            self::ARRAY               => 'any[]',
+            self::ARRAY               => Type::any(isMultiple: true),
             /*
              * @todo :  Rather than just generating a generic object interface,
              * more detailed interface can be generated in future versions.
              */
-            self::OBJECT              => '{[key:string]:any}',
-            self::STRING              => 'string',
-            self::NULL                => 'null',
-            self::BOOLEAN, self::BOOL => 'boolean',
-            default                   => 'any'
+            self::OBJECT              => Type::object(),
+            self::STRING              => Type::string(),
+            self::BOOLEAN, self::BOOL => Type::boolean(),
+            //self::NULL                => Type::any(),
+            default                   => Type::any()
         };
     }
 }

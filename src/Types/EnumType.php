@@ -5,20 +5,21 @@ namespace Wovosoft\LaravelTypescript\Types;
 /**
  * @description Converts PHP Enum types to Typescript Union Type
  */
-enum EnumType
+class EnumType
 {
     /**
      * @param class-string<\BackedEnum> $enum
      *
-     * @return string
+     * @return Type
      */
-    public static function toTypescript(string $enum): string
+    public static function toType(string $enum): Type
     {
         if (enum_exists($enum)) {
-            return collect($enum::cases())
-                ->implode(fn ($option) => "\"$option->value\"", ' | ');
+            return Type::new(
+                name: collect($enum::cases())->implode(fn($option) => "\"$option->value\"", ' | ')
+            );
         }
 
-        return 'any';
+        return Type::any();
     }
 }

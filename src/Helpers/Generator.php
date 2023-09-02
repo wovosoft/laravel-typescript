@@ -21,9 +21,15 @@ use Wovosoft\LaravelTypescript\RelationType;
 use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Definition;
 use Wovosoft\LaravelTypescript\Types\EnumType;
+use Wovosoft\LaravelTypescript\Types\LaravelCastType;
 use Wovosoft\LaravelTypescript\Types\PhpType;
 use Wovosoft\LaravelTypescript\Types\Type;
 
+/**
+ *
+ * @todo This can be used for date strings in future
+ *      https://blog.logrocket.com/handling-date-strings-typescript/
+ */
 class Generator
 {
     public function __construct(private readonly ModelInspectionResult $result)
@@ -66,8 +72,8 @@ class Generator
     {
         $typings = $this
             ->getDefinitions()
-            ->implode(function (Definition $definition, string $key) {
-                return "\t\t$key" . ($definition->isUndefinable ? '?' : '') . ": $definition;";
+            ->implode(function (Definition $def, string $key) {
+                return "\t\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
             }, PHP_EOL);
 
         $reflection = new ReflectionClass($this->result->getModel());
@@ -103,31 +109,14 @@ class Generator
                      *         rendered as values directly.
                      */
                     if (is_string($model->getCasts()[$key]) && enum_exists($model->getCasts()[$key])) {
-                        $type = new Type(
-                            name      : EnumType::toTypescript($model->getCasts()[$key]),
-                            isMultiple: false
-                        );
-                    } /*
-                     * @todo : Configurable casts can be used.
-                     *        [
-                     *          ...
-                     *          "casts"=>[
-                     *              "immutable_datetime"=>ImmutableDatetimeRenderer::class
-                     *          ]
-                     *          ...
-                     *          ]
-                     */
-                    else {
-                        $type = new Type(
-                            name      : PhpType::toTypescript($model->getCasts()[$key]),
-                            isMultiple: false
-                        );
+                        $type = EnumType::toType($model->getCasts()[$key]);
+                    } elseif (LaravelCastType::isBuiltIn($model->getCasts()[$key])) {
+                        $type = LaravelCastType::getType($model->getCasts()[$key]);
+                    } else {
+                        $type = PhpType::toType($model->getCasts()[$key]);
                     }
                 } else {
-                    $type = new Type(
-                        name      : ColumnType::toTypescript($column->getType()),
-                        isMultiple: false
-                    );
+                    $type = ColumnType::toType($column->getType());
                 }
 
                 return new Definition(
@@ -297,19 +286,23 @@ class Generator
                     //    }
                     //}
 
-                    $name = PhpType::toTypescript($type->getName() ?: config('laravel-typescript.custom_attributes.fallback_return_type'));
+                    return PhpType::toType($type->getName() ?: config('laravel-typescript.custom_attributes.fallback_return_type'));
                 } elseif (enum_exists($type->getName())) {
-                    $name = EnumType::toTypescript($type->getName());
-                } elseif (ModelInspector::isModelClassOrObject($type->getName())) {
-                    $name = $this->getQualifiedNamespace($type->getName());
-                } else {
-                    $name = "any";
+                    return EnumType::toType($type->getName());
+                } /**
+                 * When the return type is of type Model, it's qualified namespace should be used.
+                 * The returning model should be rendered in separate interface.
+                 */
+                elseif (ModelInspector::isOfModelType($type->getName())) {
+                    return Type::model(name: $type->getName());
                 }
 
-                return new Type(
-                    name      : $name,
-                    isMultiple: false
-                );
+                $resolver = config("laravel-typescript.custom_attributes.accessor_resolvers");
+                if (is_callable($resolver)) {
+                    return $resolver($type->getName());
+                }
+
+                return Type::any();
             });
     }
 
@@ -365,8 +358,5 @@ class Generator
         return !$method->getReturnType()?->allowsNull();
     }
 
-    private function getQualifiedNamespace(string $name): string
-    {
-        return str($name)->replace("\\", ".")->value();
-    }
+
 }
