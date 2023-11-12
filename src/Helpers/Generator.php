@@ -10,7 +10,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
-use ReflectionObject;
+use Throwable;
 use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Definition;
 use Wovosoft\LaravelTypescript\Types\EnumType;
@@ -182,7 +182,7 @@ readonly class Generator
         return $this->result
             ->getRelations()
             ->mapWithKeys(function (ReflectionMethod $method) use ($model, $modelReflection) {
-                $relatedClass = $method->getReturnType()->getName();
+                $relationClass = $method->getReturnType()->getName();
 
                 /**
                  * @todo : Add support for custom relations
@@ -192,6 +192,25 @@ readonly class Generator
                  * in separate generator.
                  */
                 if (!ModelInspector::isDefaultRelation($method->getReturnType()->getName())) {
+
+                    if ($method->isStatic() || $method->getNumberOfParameters() > 0) {
+                        return [];
+                    }
+
+                    try {
+                        $relation = $method->invoke($model);
+
+                        //get_class($relation->getRelated()->getModel());
+
+                    } catch (Throwable) {
+                        return [];
+                    }
+
+
+//                    if (!$relation instanceof HasManyDeep) {
+//                        return [];
+//                    }
+
                     return [
                         $this->qualifyAttributeName($method) => new Definition(
                             namespace: $modelReflection->getNamespaceName(),
@@ -201,7 +220,7 @@ readonly class Generator
                             types: [
                                 new Type(
                                     name: "unknown",
-                                    isMultiple: RelationType::getCustomReturnCountType($relatedClass)
+                                    isMultiple: RelationType::getCustomReturnCountType($relationClass)
                                 ),
                             ],
                             //model relations are not set by their method nemo,
@@ -237,7 +256,7 @@ readonly class Generator
                         types: [
                             new Type(
                                 name: $typeName,
-                                isMultiple: RelationType::getReturnCountType($relatedClass)
+                                isMultiple: RelationType::getReturnCountType($relationClass)
                             ),
                         ],
                         //model relations are not set by their method nemo,
