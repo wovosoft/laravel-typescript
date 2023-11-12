@@ -21,7 +21,7 @@ class Attributes
      *              If the method starts with get and ends with Attribute, then the
      *              middle part would be the prop name.
      *
-     *              and if the method's return type is Attribute then the method's name
+     *              And if the method's return type is Attribute, then the method's name
      *              is prop name.
      *
      * @param ReflectionMethod $reflectionMethod
@@ -43,21 +43,21 @@ class Attributes
             return true;
         }
 
-        /*
+        /**
          * in new style, custom attribute defining method always returns Attribute::class,
-         * so, when it returns other than Attribute::class it is not a custom attribute
+         * so, when it returns other than Attribute::class, it is not a custom attribute
          */
         if ($reflectionMethod->getReturnType() instanceof ReflectionUnionType) {
             return false;
         }
 
-        /*
-         * If it returns Attribute::class it is custom attribute
+        /**
+         * If it returns Attribute::class it is a custom attribute
          */
         return $reflectionMethod->getReturnType()?->getName() === Attribute::class;
     }
 
-    /*
+    /**
      * Determines if a method is used to define model relation or not
      */
     public static function isRelation(ReflectionMethod $method): bool
@@ -82,7 +82,7 @@ class Attributes
 
         $name = str($method->getName());
 
-        /*
+        /**
          * First we check if it is of old style attribute
          * old style attributes are defined like, 'get{PropName}Attribute()'
          */
@@ -95,7 +95,7 @@ class Attributes
         }
 
         /**
-         * New style attributes doesn't return multiple values,
+         * New style attributes don't return multiple values,
          * it returns only one, and it is of type.
          *
          * @link \Illuminate\Database\Eloquent\Casts\Attribute::class
@@ -104,7 +104,7 @@ class Attributes
             return false;
         }
 
-        /*
+        /**
          * If return type is exactly of Illuminate\Database\Eloquent\Casts\Attribute::class,
          * then it is of new style attribute
          */
@@ -116,7 +116,7 @@ class Attributes
      *              This method should be called for new style attributes only.
      *
      * @note In most cases, it is safe to retrieve types in this way,
-     *      because, calling new styled attribute doesn't make any database/php operations,
+     *      because calling new-styled attribute doesn't make any database/php operations,
      *      it just returns an instance of Attribute::class
      * @note It is safe to check if the method defines new style attribute before calling this function
      *

@@ -24,4 +24,9 @@ class Reflection
     {
 
     }
+
+    public static function isSameNamespace(ReflectionObject|ReflectionClass $ro1, ReflectionObject|ReflectionClass $ro2): bool
+    {
+        return $ro1->getNamespaceName() === $ro2->getNamespaceName();
+    }
 }

@@ -69,7 +69,7 @@ readonly class Generator
                 return "\t\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
             }, PHP_EOL);
 
-        $reflection = new ReflectionClass($this->result->getModel());
+        $reflection = Reflection::model($this->result->getModel());
 
         return str($typings)
             ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
@@ -113,13 +113,13 @@ readonly class Generator
                 }
 
                 return new Definition(
-                    namespace: $modelReflection->getNamespaceName(),
-                    name: $column->getName(),
-                    model: $modelReflection->getName(),
+                    namespace     : $modelReflection->getNamespaceName(),
+                    name          : $column->getName(),
+                    model         : $modelReflection->getName(),
                     modelShortName: $modelReflection->getShortName(),
-                    types: [$type],
-                    isRequired: $column->getNotnull(),
-                    isUndefinable: false
+                    types         : [$type],
+                    isRequired    : $column->getNotnull(),
+                    isUndefinable : false
                 );
             });
     }
@@ -141,7 +141,7 @@ readonly class Generator
                 if ($types->isEmpty()) {
                     $types->add(
                         new Type(
-                            name: config('laravel-typescript.custom_attributes.fallback_return_type'),
+                            name      : config('laravel-typescript.custom_attributes.fallback_return_type'),
                             isMultiple: false
                         )
                     );
@@ -149,13 +149,13 @@ readonly class Generator
 
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace: $decClass->getNamespaceName(),
-                        name: $this->qualifyAttributeName($method),
-                        model: $decClass->getName(),
+                        namespace     : $decClass->getNamespaceName(),
+                        name          : $this->qualifyAttributeName($method),
+                        model         : $decClass->getName(),
                         modelShortName: $decClass->getShortName(),
-                        types: $types,
-                        isRequired: $this->isRequiredReturnType($method),
-                        isUndefinable: true
+                        types         : $types,
+                        isRequired    : $this->isRequiredReturnType($method),
+                        isUndefinable : true
                     ),
                 ];
             });
@@ -182,87 +182,43 @@ readonly class Generator
         return $this->result
             ->getRelations()
             ->mapWithKeys(function (ReflectionMethod $method) use ($model, $modelReflection) {
-                $relationClass = $method->getReturnType()->getName();
+                try {
+                    $relation = $method->invoke($model);
+                    $relatedModel = get_class($relation->getRelated());
 
-                /**
-                 * @todo : Add support for custom relations
-                 * Only allow default relations,
-                 * if there are other relations defined by user,
-                 * they should be defined as custom attributes
-                 * in separate generator.
-                 */
-                if (!ModelInspector::isDefaultRelation($method->getReturnType()->getName())) {
-
-                    if ($method->isStatic() || $method->getNumberOfParameters() > 0) {
-                        return [];
-                    }
-
-                    try {
-                        $relation = $method->invoke($model);
-
-                        //get_class($relation->getRelated()->getModel());
-
-                    } catch (Throwable) {
-                        return [];
-                    }
-
-
-//                    if (!$relation instanceof HasManyDeep) {
-//                        return [];
-//                    }
-
-                    return [
-                        $this->qualifyAttributeName($method) => new Definition(
-                            namespace: $modelReflection->getNamespaceName(),
-                            name: $method->getName(),
-                            model: $modelReflection->getName(),
-                            modelShortName: $modelReflection->getShortName(),
-                            types: [
-                                new Type(
-                                    name: "unknown",
-                                    isMultiple: RelationType::getCustomReturnCountType($relationClass)
-                                ),
-                            ],
-                            //model relations are not set by their method nemo,
-                            //so in typescript it should be nullable (not required) and undefinable
-                            isRequired: false,
-                            isUndefinable: true
-                        )
-                    ];
+                } catch (Throwable) {
+                    return [];
                 }
 
-                $relatedModelReflection = Reflection::model($model->{$method->getName()}()?->getRelated());
+                $relatedModelReflection = Reflection::model($relatedModel);
 
-                /*
-                 * When Model and Related Morels are from same namespace,
+                /**
+                 * When Model and Related Morels are from the same namespace,
                  * only short name is enough
-                 */
-                if ($relatedModelReflection->getNamespaceName() === $modelReflection->getNamespaceName()) {
-                    $typeName = $relatedModelReflection->getShortName();
-                } /*
                  * When Model and Related Model are from different namespaces,
                  * full namespace name should be used.
                  */
-                else {
-                    $typeName = $relatedModelReflection->getName();
-                }
+
+                $typeName = Reflection::isSameNamespace($relatedModelReflection, $modelReflection)
+                    ? $relatedModelReflection->getShortName()
+                    : $relatedModelReflection->getName();
 
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace: $modelReflection->getNamespaceName(),
-                        name: $method->getName(),
-                        model: $modelReflection->getName(),
+                        namespace     : $modelReflection->getNamespaceName(),
+                        name          : $method->getName(),
+                        model         : get_class($model),
                         modelShortName: $modelReflection->getShortName(),
-                        types: [
+                        types         : [
                             new Type(
-                                name: $typeName,
-                                isMultiple: RelationType::getReturnCountType($relationClass)
+                                name      : $typeName,
+                                isMultiple: RelationType::getReturnCountType($method->getReturnType()->getName())
                             ),
                         ],
                         //model relations are not set by their method nemo,
                         //so in typescript it should be nullable (not required) and undefinable
-                        isRequired: false,
-                        isUndefinable: true
+                        isRequired    : false,
+                        isUndefinable : true
                     )
                 ];
             });

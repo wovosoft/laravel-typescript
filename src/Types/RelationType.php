@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Wovosoft\LaravelTypescript\Helpers\ModelInspector;
 
 enum RelationType
 {
@@ -18,6 +19,14 @@ enum RelationType
 
     public static function getReturnCountType(string $relationClass): RelationType
     {
+        if (!ModelInspector::isDefaultRelation($relationClass)) {
+            if (is_subclass_of($relationClass, HasOneOrMany::class)) {
+                return RelationType::OneOrMany;
+            }
+
+            return config("laravel-typescript.counter")($relationClass);
+        }
+
         return match ($relationClass) {
             //HasOne::class,
             //HasOneThrough::class,

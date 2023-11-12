@@ -3,6 +3,7 @@
 use Carbon\Carbon as CarbonMutable;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
+use Wovosoft\LaravelTypescript\Types\RelationType;
 use Wovosoft\LaravelTypescript\Types\Type;
 
 return [
@@ -27,7 +28,18 @@ return [
             default                => Type::any()
         },
     ],
-    "custom_relations"  => [
-        "resolvers" => []
-    ]
+    /**
+     * Custom relations should have return types defined.
+     * But if it is not, then the return type should be this type.
+     * And this value should be php supported return types.
+     * like primitive types or any other classes.
+     * @see https://github.com/staudenmeir/eloquent-has-many-deep
+     */
+    "counter"           => function (string $relationClass) {
+        return match ($relationClass) {
+            //"\Staudenmeir\EloquentHasManyDeep\HasOneDeep"  => RelationType::One,
+            "Staudenmeir\EloquentHasManyDeep\HasManyDeep" => RelationType::Many,
+            default                                        => RelationType::One
+        };
+    }
 ];

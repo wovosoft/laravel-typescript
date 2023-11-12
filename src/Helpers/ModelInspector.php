@@ -127,8 +127,8 @@ class ModelInspector
     }
 
     /**
-     * @description Returns model inspection result which contains
-     *              list of database columns, custom attributes and relations.
+     * @description Return model inspection result which contains
+     *              list of database columns, custom attributes, and relations.
      *
      * @return ModelInspectionResult
      * @throws \Exception
@@ -141,10 +141,10 @@ class ModelInspector
         $this->isModelSet();
 
         return new ModelInspectionResult(
-            model: $this->model,
-            columns: $this->getColumns(),
+            model            : $this->model,
+            columns          : $this->getColumns(),
             custom_attributes: $this->getCustomAttributes(),
-            relations: $this->getRelations()
+            relations        : $this->getRelations()
         );
     }
 
@@ -186,10 +186,7 @@ class ModelInspector
      */
     private function getCustomAttributes(): Collection
     {
-        return collect((new ReflectionClass($this->model))->getMethods())
-            ->filter(
-                fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
-            );
+        return $this->getMethods()->filter(fn(ReflectionMethod $rf) => Attributes::isAttribute($rf));
     }
 
     /**
@@ -204,8 +201,17 @@ class ModelInspector
     {
         $this->isModelSet();
 
-        return collect((new ReflectionClass($this->model))->getMethods())
+        return $this->getMethods()
             ->filter(fn(ReflectionMethod $rf) => Attributes::isRelation($rf));
+    }
+
+
+    /**
+     * @throws ReflectionException
+     */
+    private function getMethods(): Collection
+    {
+        return collect((new ReflectionClass($this->model))->getMethods(ReflectionMethod::IS_PUBLIC));
     }
 
     /**
