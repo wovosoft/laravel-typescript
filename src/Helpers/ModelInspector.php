@@ -6,6 +6,21 @@ use Composer\ClassMapGenerator\ClassMapGenerator;
 use Doctrine\DBAL\Exception;
 use Doctrine\DBAL\Schema\Column;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use ReflectionClass;
 use ReflectionException;
@@ -18,8 +33,27 @@ class ModelInspector
      */
     public function __construct(
         private string|Model|null $model = null
-    ) {
+    )
+    {
     }
+
+    private static array $defaultRelations = [
+        BelongsTo::class,
+        BelongsToMany::class,
+        HasMany::class,
+        HasManyThrough::class,
+        HasOne::class,
+        HasOneOrMany::class,
+        HasOneThrough::class,
+        MorphMany::class,
+        MorphOne::class,
+        MorphOneOrMany::class,
+        MorphPivot::class,
+        MorphTo::class,
+        MorphToMany::class,
+        Pivot::class,
+        Relation::class
+    ];
 
     /**
      * @description Returns the list of model-classes in a directory
@@ -28,7 +62,7 @@ class ModelInspector
      *
      * @return Collection<int,class-string<Model>>
      *
-     * @link https://github.com/composer/class-map-generator
+     * @link        https://github.com/composer/class-map-generator
      */
     public static function getModelsIn(string|array $directories): Collection
     {
@@ -37,15 +71,15 @@ class ModelInspector
         }
 
         return collect($directories)
-            ->map(fn (string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
+            ->map(fn(string $dir) => array_keys(ClassMapGenerator::createMap($dir)))
             ->collapse()
-            ->filter(fn ($class) => static::isOfModelType($class));
+            ->filter(fn($class) => static::isOfModelType($class));
     }
 
     /**
      * @description Checks if the provided class/object is of type Model
      *
-     * @note the parameter $model's type is set to be string|Model, because
+     * @note        the parameter $model's type is set to be string|Model, because
      *       we need to check any kind of object/class to be checked if it
      *       is of type Model or not. If string|Model is used, strings of any
      *      type will be passed, but objects other than Model won't be passed
@@ -67,7 +101,7 @@ class ModelInspector
     /**
      * @description Returns new instance of the Model Inspector class.
      *
-     * @note If value for $model is provided @method inspectionFor() doesn't need to be used
+     * @note        If value for $model is provided @method inspectionFor() doesn't need to be used
      *
      * @param class-string<Model>|Model|null $model
      *
@@ -96,31 +130,31 @@ class ModelInspector
      * @description Returns model inspection result which contains
      *              list of database columns, custom attributes and relations.
      *
-     * @throws ReflectionException
+     * @return ModelInspectionResult
      * @throws \Exception
      * @throws Exception
      *
-     * @return ModelInspectionResult
+     * @throws ReflectionException
      */
     public function getInspectionResult(): ModelInspectionResult
     {
         $this->isModelSet();
 
         return new ModelInspectionResult(
-            model            : $this->model,
-            columns          : $this->getColumns(),
+            model: $this->model,
+            columns: $this->getColumns(),
             custom_attributes: $this->getCustomAttributes(),
-            relations        : $this->getRelations()
+            relations: $this->getRelations()
         );
     }
 
     /**
      * @description Returns Collection of Database columns
      *
-     * @throws \Exception
+     * @return Collection<int,Column>
      * @throws Exception
      *
-     * @return Collection<int,Column>
+     * @throws \Exception
      */
     private function getColumns(): Collection
     {
@@ -140,46 +174,46 @@ class ModelInspector
          * So, those fields are being forgotten (omitted) from the collection.
          */
         return collect($columns)
-            ->when(!empty($model->getHidden()), fn (Collection $cols) => $cols->forget($model->getHidden()));
+            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
     }
 
     /**
      * @description Returns methods which are used to define Custom Attributes
      *
+     * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
      *
-     * @return Collection<int,ReflectionMethod>
      */
     private function getCustomAttributes(): Collection
     {
         return collect((new ReflectionClass($this->model))->getMethods())
             ->filter(
-                fn (ReflectionMethod $rf) => Attributes::isAttribute($rf)
+                fn(ReflectionMethod $rf) => Attributes::isAttribute($rf)
             );
     }
 
     /**
      * @description Returns methods of a given model, which are used to define relations
      *
-     * @throws \Exception
+     * @return Collection<int,ReflectionMethod>
      * @throws ReflectionException
      *
-     * @return Collection<int,ReflectionMethod>
+     * @throws \Exception
      */
     private function getRelations(): Collection
     {
         $this->isModelSet();
 
         return collect((new ReflectionClass($this->model))->getMethods())
-            ->filter(fn (ReflectionMethod $rf) => Attributes::isRelation($rf));
+            ->filter(fn(ReflectionMethod $rf) => Attributes::isRelation($rf));
     }
 
     /**
      * @param class-string<Model>|Model $model
      *
+     * @return Model
      * @throws \Exception
      *
-     * @return Model
      */
     public static function parseModel(string|Model $model): Model
     {
@@ -209,5 +243,15 @@ class ModelInspector
     public static function getQualifiedNamespace(string $name): string
     {
         return str($name)->replace('\\', '.')->value();
+    }
+
+    public static function getDefaultRelations(): array
+    {
+        return static::$defaultRelations;
+    }
+
+    public static function isDefaultRelation(string $relation): bool
+    {
+        return in_array($relation, static::$defaultRelations);
     }
 }

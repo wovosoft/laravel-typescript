@@ -10,6 +10,7 @@ use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
 use ReflectionNamedType;
+use ReflectionObject;
 use Wovosoft\LaravelTypescript\Types\ColumnType;
 use Wovosoft\LaravelTypescript\Types\Definition;
 use Wovosoft\LaravelTypescript\Types\EnumType;
@@ -22,9 +23,9 @@ use Wovosoft\LaravelTypescript\Types\Type;
  * @todo This can be used for date strings in future
  *      https://blog.logrocket.com/handling-date-strings-typescript/
  */
-class Generator
+readonly class Generator
 {
-    public function __construct(private readonly ModelInspectionResult $result)
+    public function __construct(private ModelInspectionResult $result)
     {
     }
 
@@ -85,7 +86,7 @@ class Generator
      */
     private function getColumnDefinitions(): Collection
     {
-        $modelReflection = new ReflectionClass($this->result->getModel());
+        $modelReflection = Reflection::model($this->result->getModel());
         $model = ModelInspector::parseModel($this->result->getModel());
 
         return $this->result
@@ -112,13 +113,13 @@ class Generator
                 }
 
                 return new Definition(
-                    namespace     : $modelReflection->getNamespaceName(),
-                    name          : $column->getName(),
-                    model         : $modelReflection->getName(),
+                    namespace: $modelReflection->getNamespaceName(),
+                    name: $column->getName(),
+                    model: $modelReflection->getName(),
                     modelShortName: $modelReflection->getShortName(),
-                    types         : [$type],
-                    isRequired    : $column->getNotnull(),
-                    isUndefinable : false
+                    types: [$type],
+                    isRequired: $column->getNotnull(),
+                    isUndefinable: false
                 );
             });
     }
@@ -140,7 +141,7 @@ class Generator
                 if ($types->isEmpty()) {
                     $types->add(
                         new Type(
-                            name      : config('laravel-typescript.custom_attributes.fallback_return_type'),
+                            name: config('laravel-typescript.custom_attributes.fallback_return_type'),
                             isMultiple: false
                         )
                     );
@@ -148,13 +149,13 @@ class Generator
 
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace     : $decClass->getNamespaceName(),
-                        name          : $this->qualifyAttributeName($method),
-                        model         : $decClass->getName(),
+                        namespace: $decClass->getNamespaceName(),
+                        name: $this->qualifyAttributeName($method),
+                        model: $decClass->getName(),
                         modelShortName: $decClass->getShortName(),
-                        types         : $types,
-                        isRequired    : $this->isRequiredReturnType($method),
-                        isUndefinable : true
+                        types: $types,
+                        isRequired: $this->isRequiredReturnType($method),
+                        isUndefinable: true
                     ),
                 ];
             });
@@ -176,15 +177,42 @@ class Generator
             $model = new $modelClass();
         }
 
-        $modelReflection = new ReflectionClass($model);
+        $modelReflection = Reflection::model($model);
 
         return $this->result
             ->getRelations()
             ->mapWithKeys(function (ReflectionMethod $method) use ($model, $modelReflection) {
-                /* @var Model $relatedModel */
-                $relatedModel = $model->{$method->getName()}()->getRelated();
+                $relatedClass = $method->getReturnType()->getName();
 
-                $relatedModelReflection = new ReflectionClass($relatedModel);
+                /**
+                 * @todo : Add support for custom relations
+                 * Only allow default relations,
+                 * if there are other relations defined by user,
+                 * they should be defined as custom attributes
+                 * in separate generator.
+                 */
+                if (!ModelInspector::isDefaultRelation($method->getReturnType()->getName())) {
+                    return [
+                        $this->qualifyAttributeName($method) => new Definition(
+                            namespace: $modelReflection->getNamespaceName(),
+                            name: $method->getName(),
+                            model: $modelReflection->getName(),
+                            modelShortName: $modelReflection->getShortName(),
+                            types: [
+                                new Type(
+                                    name: "unknown",
+                                    isMultiple: RelationType::getCustomReturnCountType($relatedClass)
+                                ),
+                            ],
+                            //model relations are not set by their method nemo,
+                            //so in typescript it should be nullable (not required) and undefinable
+                            isRequired: false,
+                            isUndefinable: true
+                        )
+                    ];
+                }
+
+                $relatedModelReflection = Reflection::model($model->{$method->getName()}()?->getRelated());
 
                 /*
                  * When Model and Related Morels are from same namespace,
@@ -200,24 +228,23 @@ class Generator
                     $typeName = $relatedModelReflection->getName();
                 }
 
-                $relationName = $method->getReturnType()->getName();
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
-                        namespace     : $modelReflection->getNamespaceName(),
-                        name          : $method->getName(),
-                        model         : $modelReflection->getName(),
+                        namespace: $modelReflection->getNamespaceName(),
+                        name: $method->getName(),
+                        model: $modelReflection->getName(),
                         modelShortName: $modelReflection->getShortName(),
-                        types         : [
+                        types: [
                             new Type(
-                                name      : $typeName,
-                                isMultiple: RelationType::getReturnCountType($relationName)
+                                name: $typeName,
+                                isMultiple: RelationType::getReturnCountType($relatedClass)
                             ),
                         ],
                         //model relations are not set by their method nemo,
                         //so in typescript it should be nullable (not required) and undefinable
-                        isRequired    : false,
-                        isUndefinable : true
-                    ),
+                        isRequired: false,
+                        isUndefinable: true
+                    )
                 ];
             });
     }

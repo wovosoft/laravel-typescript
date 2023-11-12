@@ -38,4 +38,16 @@ enum RelationType
             default               => RelationType::One
         };
     }
+
+    /**
+     * @param string $relationClass
+     * @return RelationType
+     * @todo : Implement Custom relations
+     */
+    public static function getCustomReturnCountType(string $relationClass): RelationType
+    {
+        return match ($relationClass) {
+            default => RelationType::One
+        };
+    }
 }
