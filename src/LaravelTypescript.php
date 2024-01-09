@@ -78,16 +78,20 @@ class LaravelTypescript
             ])
             ->map(function (Collection $modelClasses, string $namespace) {
                 $namespace = ModelInspector::getQualifiedNamespace($namespace);
+                $modelTypes = $modelClasses
+                ->map(
+                    fn(string $modelClass) => (string)ModelInspector::new($modelClass)
+                        ->getInspectionResult()
+                        ->getGenerator()
+                )
+                ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL);
+                if (config('laravel-typescript.declare_namespace')) {
+                    return "declare namespace $namespace {" . PHP_EOL
+                        . $modelTypes
+                        . PHP_EOL . '}' . PHP_EOL;
+                }
 
-                return "declare namespace $namespace {" . PHP_EOL
-                    . $modelClasses
-                        ->map(
-                            fn(string $modelClass) => (string)ModelInspector::new($modelClass)
-                                ->getInspectionResult()
-                                ->getGenerator()
-                        )
-                        ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL)
-                    . PHP_EOL . '}' . PHP_EOL;
+                return $modelTypes . PHP_EOL;
             })
             ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL);
     }
