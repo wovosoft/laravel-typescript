@@ -24,7 +24,10 @@ enum RelationType
                 return RelationType::OneOrMany;
             }
 
-            return config("laravel-typescript.counter")($relationClass);
+            $counterClass = config("laravel-typescript.counter");
+            $counter = new $counterClass();
+
+            return $counter->run($relationClass);
         }
 
         return match ($relationClass) {
