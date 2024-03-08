@@ -25,8 +25,11 @@ use Wovosoft\LaravelTypescript\Types\Type;
  */
 readonly class Generator
 {
+    private string $indent;
+    
     public function __construct(private ModelInspectionResult $result)
     {
+        $this->indent = config('laravel-typescript.declare_namespace') ? "\t" : "";
     }
 
     /**
@@ -66,14 +69,14 @@ readonly class Generator
         $typings = $this
             ->getDefinitions()
             ->implode(function (Definition $def, string $key) {
-                return "\t\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
+                return $this->indent . "\t$key" . ($def->isUndefinable ? '?' : '') . ": $def;";
             }, PHP_EOL);
 
         $reflection = Reflection::model($this->result->getModel());
 
         return str($typings)
-            ->prepend("\texport interface " . $reflection->getShortName() . ' {' . PHP_EOL)
-            ->append(PHP_EOL . "\t}");
+            ->prepend($this->indent . "export interface " . $reflection->getShortName() . ' {' . PHP_EOL)
+            ->append(PHP_EOL . "$this->indent}");
     }
 
     /**
