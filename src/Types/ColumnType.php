@@ -22,7 +22,6 @@ class ColumnType
         }
 
         return match ($type) {
-            Types::ARRAY,
             Types::SIMPLE_ARRAY         => GenericType::array(),
 
             Types::ASCII_STRING         => GenericType::string(comment: 'ASCII String'),
@@ -54,8 +53,7 @@ class ColumnType
              * It's schema can be retried to generate more accurate
              * interface in upcoming versions.
              */
-            Types::JSON,
-            Types::OBJECT               => GenericType::object(),
+            Types::JSON                 => GenericType::object(),
             default                     => GenericType::any()
         };
     }
