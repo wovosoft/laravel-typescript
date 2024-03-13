@@ -2,34 +2,28 @@
 
 namespace Wovosoft\LaravelTypescript;
 
-use Doctrine\DBAL\Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use ReflectionClass;
 use ReflectionException;
 use Wovosoft\LaravelTypescript\Helpers\ModelInspector;
 
-class LaravelTypescript
-{
-    public static function new(): static
-    {
+class LaravelTypescript {
+    public static function new(): static {
         return new static();
     }
 
     /**
-     * @param string|array $sourceDir
-     * @param string       $outputPath
+     * @param  string|array  $sourceDir
+     * @param  string  $outputPath
      *
      * @return array<string,string> {path,contents}
      * @throws ReflectionException
-     *
-     * @throws Exception
      */
     public function generate(
         string|array $sourceDir,
-        string       $outputPath,
-    ): array
-    {
+        string $outputPath,
+    ): array {
         File::ensureDirectoryExists(dirname($outputPath));
 
         $contents = $this->toTypescript($sourceDir);
@@ -43,15 +37,13 @@ class LaravelTypescript
     }
 
     /**
-     * @param string|array $sourceDir
+     * @param  string|array  $sourceDir
      *
      * @return string
      * @throws ReflectionException
-     *
-     * @throws Exception
      */
-    public function toTypescript(string|array $sourceDir): string
-    {
+    public function toTypescript(string|array $sourceDir): string {
+
         return ModelInspector::getModelsIn($sourceDir)
             ->map(fn(string $modelClass) => [
                 'namespace' => (new ReflectionClass($modelClass))->getNamespaceName(),
@@ -64,16 +56,22 @@ class LaravelTypescript
             ->map(function (Collection $modelClasses, string $namespace) {
                 $namespace = ModelInspector::getQualifiedNamespace($namespace);
 
-                return "declare namespace $namespace {" . PHP_EOL
-                    . $modelClasses
-                        ->map(
-                            fn(string $modelClass) => (string)ModelInspector::new($modelClass)
-                                ->getInspectionResult()
-                                ->getGenerator()
-                        )
-                        ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL)
-                    . PHP_EOL . '}' . PHP_EOL;
+                return "declare namespace $namespace {"
+                       .PHP_EOL
+                       .$modelClasses
+                           ->map(
+                               function (string $modelClass) {
+                                   return ModelInspector::new($modelClass)
+                                       ->getInspectionResult()
+                                       ->getGenerator()
+                                       ->toTypescript();
+                               }
+                           )
+                           ->implode(fn(string $content) => $content, PHP_EOL.PHP_EOL)
+                       .PHP_EOL
+                       .'}'
+                       .PHP_EOL;
             })
-            ->implode(fn(string $content) => $content, PHP_EOL . PHP_EOL);
+            ->implode(fn(string $content) => $content, PHP_EOL.PHP_EOL);
     }
 }

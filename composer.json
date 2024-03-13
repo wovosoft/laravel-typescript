@@ -19,7 +19,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "doctrine/dbal": ">=3.6.4",
+        "laravel/framework": "^11.0",
         "composer/class-map-generator": ">=1.1.0"
     },
     "autoload": {

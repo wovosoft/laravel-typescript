@@ -2,7 +2,6 @@
 
 namespace Wovosoft\LaravelTypescript\Helpers;
 
-use Doctrine\DBAL\Schema\Column;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -40,7 +39,8 @@ readonly class Generator
         return $this
             ->getColumnDefinitions()
             ->merge($this->getCustomAttributeDefinitions())
-            ->merge($this->getRelationDefinitions());
+            ->merge($this->getRelationDefinitions())
+            ->keyBy('name');
     }
 
     /**
@@ -108,7 +108,7 @@ readonly class Generator
                         $type = PhpType::toType($model->getCasts()[$key]);
                     }
                 } else {
-                    $type = ColumnType::toType($column->getType());
+                    $type = ColumnType::toType($column->getTypeName());
                 }
 
                 return new Definition(

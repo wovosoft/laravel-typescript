@@ -2,24 +2,23 @@
 
 namespace Wovosoft\LaravelTypescript\Helpers;
 
-use Doctrine\DBAL\Schema\Column;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use ReflectionMethod;
 
-class ModelInspectionResult
-{
+readonly class ModelInspectionResult {
     /**
-     * @param class-string<Model>|Model        $model
-     * @param Collection<int,Column>           $columns
-     * @param Collection<int,ReflectionMethod> $custom_attributes
-     * @param Collection<int,ReflectionMethod> $relations
+     * @param  class-string<Model>|Model  $model
+     * @param  Collection<int,Column>  $columns
+     * @param  Collection<int,ReflectionMethod>  $custom_attributes
+     * @param  Collection<int,ReflectionMethod>  $relations
      */
     public function __construct(
-        private readonly string|Model $model,
-        private readonly Collection $columns,
-        private readonly Collection $custom_attributes,
-        private readonly Collection $relations
+        private string|Model $model,
+        private Collection $columns,
+        private Collection $custom_attributes,
+        private Collection $relations
     ) {
     }
 
@@ -28,50 +27,43 @@ class ModelInspectionResult
      *
      * @return string
      */
-    public function __toString(): string
-    {
+    public function __toString(): string {
         return $this->getGenerator();
     }
 
     /**
      * @return Model|string
      */
-    public function getModel(): Model|string
-    {
+    public function getModel(): Model|string {
         return $this->model;
     }
 
     /**
      * @return Collection<int,Column>
      */
-    public function getColumns(): Collection
-    {
+    public function getColumns(): Collection {
         return $this->columns;
     }
 
     /**
      * @return Collection<int,ReflectionMethod>
      */
-    public function getCustomAttributes(): Collection
-    {
+    public function getCustomAttributes(): Collection {
         return $this->custom_attributes;
     }
 
     /**
      * @return Collection<int,ReflectionMethod>
      */
-    public function getRelations(): Collection
-    {
+    public function getRelations(): Collection {
         return $this->relations;
     }
 
-    public function getGenerator(): Generator
-    {
+    public function getGenerator(): Generator {
         return new Generator($this);
     }
 
-    public function toTypescript(): string
-    {
+    public function toTypescript(): string {
         return (string) $this->getGenerator();
     }
 }

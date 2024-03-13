@@ -3,8 +3,6 @@
 namespace Wovosoft\LaravelTypescript\Helpers;
 
 use Composer\ClassMapGenerator\ClassMapGenerator;
-use Doctrine\DBAL\Exception;
-use Doctrine\DBAL\Schema\Column;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -29,12 +28,11 @@ use ReflectionMethod;
 class ModelInspector
 {
     /**
-     * @param class-string<Model>|Model|null $model
+     * @param  class-string<Model>|Model|null  $model
      */
     public function __construct(
         private string|Model|null $model = null
-    )
-    {
+    ) {
     }
 
     private static array $defaultRelations = [
@@ -58,7 +56,7 @@ class ModelInspector
     /**
      * @description Returns the list of model-classes in a directory
      *
-     * @param string|array $directories
+     * @param  string|array  $directories
      *
      * @return Collection<int,class-string<Model>>
      *
@@ -85,7 +83,7 @@ class ModelInspector
      *      type will be passed, but objects other than Model won't be passed
      *      for testing whether it is of type Model or not.
      *
-     * @param mixed $model
+     * @param  mixed  $model
      *
      * @return bool
      */
@@ -103,7 +101,7 @@ class ModelInspector
      *
      * @note        If value for $model is provided @method inspectionFor() doesn't need to be used
      *
-     * @param class-string<Model>|Model|null $model
+     * @param  class-string<Model>|Model|null  $model
      *
      * @return static
      */
@@ -115,7 +113,7 @@ class ModelInspector
     /**
      * @description Used to set Model class for inspection
      *
-     * @param class-string<Model>|Model $model
+     * @param  class-string<Model>|Model  $model
      *
      * @return $this
      */
@@ -132,7 +130,6 @@ class ModelInspector
      *
      * @return ModelInspectionResult
      * @throws \Exception
-     * @throws Exception
      *
      * @throws ReflectionException
      */
@@ -152,7 +149,6 @@ class ModelInspector
      * @description Returns Collection of Database columns
      *
      * @return Collection<int,Column>
-     * @throws Exception
      *
      * @throws \Exception
      */
@@ -162,11 +158,7 @@ class ModelInspector
 
         $model = static::parseModel($this->model);
 
-        $columns = $model
-            ->getConnection()
-            ->getDoctrineConnection()
-            ->createSchemaManager()
-            ->listTableColumns($model->getTable());
+        $columns = Schema::getColumns($model->getTable());
 
         /**
          * Model fields name should be exact like column name.
@@ -174,7 +166,8 @@ class ModelInspector
          * So, those fields are being forgotten (omitted) from the collection.
          */
         return collect($columns)
-            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()));
+            ->when(!empty($model->getHidden()), fn(Collection $cols) => $cols->forget($model->getHidden()))
+            ->map(fn($col) => Column::fromArray($col));
     }
 
     /**
@@ -215,7 +208,7 @@ class ModelInspector
     }
 
     /**
-     * @param class-string<Model>|Model $model
+     * @param  class-string<Model>|Model  $model
      *
      * @return Model
      * @throws \Exception
