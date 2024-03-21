@@ -205,7 +205,7 @@ readonly class Generator
                 return [
                     $this->qualifyAttributeName($method) => new Definition(
                         namespace     : $modelReflection->getNamespaceName(),
-                        name          : $method->getName(),
+                        name          : $this->qualifyAttributeName($method),
                         model         : get_class($model),
                         modelShortName: $modelReflection->getShortName(),
                         types         : [
