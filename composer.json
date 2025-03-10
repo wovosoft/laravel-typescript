@@ -18,9 +18,7 @@
         "php to typescript"
     ],
     "require": {
-        "php": ">=8.2",
-        "laravel/framework": "^11.0",
-        "composer/class-map-generator": ">=1.1.0"
+        "composer/class-map-generator": "*"
     },
     "autoload": {
         "psr-4": {
