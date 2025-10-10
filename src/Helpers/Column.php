@@ -41,7 +41,7 @@ class Column {
         $item->default = $data['default'];
         $item->comment = $data['comment'];
         $item->auto_increment = $data['auto_increment'];
-        $item->generation = $data['generation'];
+        $item->generation = is_array($data['generation'])?"Record<string,any>":$data['generation'];
         return $item;
     }
 
